@@ -1,0 +1,126 @@
+                            CONTINGENCY ANALYSIS REPORT
+              GENERATED FROM ASPEN POWERFLOW BY A POWERSCRIPT PROGRAM
+
+                                 Date: 2002-11-12
+
+Scope:
+  N-1 contingency         [X]
+  N-2 contingency         [ ]
+  From kV               = 0
+  To kV                 = 999
+  Skip names            = ZIGZAG
+Upper voltage limit(PU) = 1.05
+Lower voltage limit(PU) = 0.95
+Use line rating         = B
+Current threshold %     = 0.85
+Slack bus               =  0 Slack 20.0kV
+
+
+
+====== Case #1 (N-1) ==============================================================================
+Outages: 
+ 0 North 500.0kV -  0 StationNN 500.0kV 2
+
+__Bus____________________Voltage(PU)_________Flag______
+ 0 North 500.0kV              1.05             
+ 0 North G1 20.0kV            1.05             
+ 0 North G2 20.0kV            1.05             
+ 0 North G3 20.0kV            1.05             
+ 0 Slack 20.0kV               1.05             
+ 0 South 500.0kV              1.05             
+ 0 South G1 20.0kV            1.07           Over Voltage
+ 0 Station S 500.0kV          1.059          Over Voltage
+ 0 StationNN 500.0kV          1.052          Over Voltage
+
+__Line______________________________________________________Current(A)_____Rating(A)______Flag______
+ 0 North 500.0kV -  0 StationNN 500.0kV 1                   1894.84        0.0            
+ 0 StationNN 500.0kV -  0 Station S 500.0kV 1               609.79         0.0            
+ 0 StationNN 500.0kV -  0 Station S 500.0kV 2               609.79         0.0            
+ 0 Station S 500.0kV -  0 South 500.0kV                     420.48         0.0            
+
+====== Case #2 (N-1) ==============================================================================
+Outages: 
+ 0 North 500.0kV -  0 StationNN 500.0kV 1
+
+__Bus____________________Voltage(PU)_________Flag______
+ 0 North 500.0kV              1.05             
+ 0 North G1 20.0kV            1.05             
+ 0 North G2 20.0kV            1.05             
+ 0 North G3 20.0kV            1.05             
+ 0 Slack 20.0kV               1.05             
+ 0 South 500.0kV              1.05             
+ 0 South G1 20.0kV            1.07           Over Voltage
+ 0 Station S 500.0kV          1.045            
+ 0 StationNN 500.0kV          1.022            
+
+__Line______________________________________________________Current(A)_____Rating(A)______Flag______
+ 0 North 500.0kV -  0 StationNN 500.0kV 2                   2027.05        22.0           Overloaded
+ 0 StationNN 500.0kV -  0 Station S 500.0kV 1               628.94         0.0            
+ 0 StationNN 500.0kV -  0 Station S 500.0kV 2               628.94         0.0            
+ 0 Station S 500.0kV -  0 South 500.0kV                     432.04         0.0            
+
+====== Case #3 (N-1) ==============================================================================
+Outages: 
+ 0 Station S 500.0kV -  0 South 500.0kV  
+
+__Bus____________________Voltage(PU)_________Flag______
+ 0 North 500.0kV              1.05             
+ 0 North G1 20.0kV            1.05             
+ 0 North G2 20.0kV            1.05             
+ 0 North G3 20.0kV            1.05             
+ 0 Slack 20.0kV               1.05             
+ 0 South 500.0kV              0.0            Under Voltage
+ 0 South G1 20.0kV            0.0            Under Voltage
+ 0 Station S 500.0kV          1.018            
+ 0 StationNN 500.0kV          1.057          Over Voltage
+
+__Line______________________________________________________Current(A)_____Rating(A)______Flag______
+ 0 North 500.0kV -  0 StationNN 500.0kV 1                   1328.73        0.0            
+ 0 North 500.0kV -  0 StationNN 500.0kV 2                   664.37         22.0           Overloaded
+ 0 StationNN 500.0kV -  0 Station S 500.0kV 1               684.74         0.0            
+ 0 StationNN 500.0kV -  0 Station S 500.0kV 2               684.74         0.0            
+
+====== Case #4 (N-1) ==============================================================================
+Outages: 
+ 0 StationNN 500.0kV -  0 Station S 500.0kV 2
+
+__Bus____________________Voltage(PU)_________Flag______
+ 0 North 500.0kV              1.05             
+ 0 North G1 20.0kV            1.05             
+ 0 North G2 20.0kV            1.05             
+ 0 North G3 20.0kV            1.05             
+ 0 Slack 20.0kV               1.05             
+ 0 South 500.0kV              1.05             
+ 0 South G1 20.0kV            1.07           Over Voltage
+ 0 Station S 500.0kV          0.979            
+ 0 StationNN 500.0kV          1.043            
+
+__Line______________________________________________________Current(A)_____Rating(A)______Flag______
+ 0 North 500.0kV -  0 StationNN 500.0kV 1                   1311.25        0.0            
+ 0 North 500.0kV -  0 StationNN 500.0kV 2                   655.63         22.0           Overloaded
+ 0 StationNN 500.0kV -  0 Station S 500.0kV 1               770.13         0.0            
+ 0 Station S 500.0kV -  0 South 500.0kV                     633.45         0.0            
+
+====== Case #5 (N-1) ==============================================================================
+Outages: 
+ 0 StationNN 500.0kV -  0 Station S 500.0kV 1
+
+__Bus____________________Voltage(PU)_________Flag______
+ 0 North 500.0kV              1.05             
+ 0 North G1 20.0kV            1.05             
+ 0 North G2 20.0kV            1.05             
+ 0 North G3 20.0kV            1.05             
+ 0 Slack 20.0kV               1.05             
+ 0 South 500.0kV              1.05             
+ 0 South G1 20.0kV            1.07           Over Voltage
+ 0 Station S 500.0kV          0.979            
+ 0 StationNN 500.0kV          1.043            
+
+__Line______________________________________________________Current(A)_____Rating(A)______Flag______
+ 0 North 500.0kV -  0 StationNN 500.0kV 1                   1311.25        0.0            
+ 0 North 500.0kV -  0 StationNN 500.0kV 2                   655.63         22.0           Overloaded
+ 0 StationNN 500.0kV -  0 Station S 500.0kV 2               770.13         0.0            
+ 0 Station S 500.0kV -  0 South 500.0kV                     633.45         0.0            
+
+Summary:
+  Analyzed 5 contigencies
