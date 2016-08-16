@@ -2,7 +2,7 @@
 '
 ' DATAWKS.BAS
 '
-' Version 2.0
+' Version 2.1
 '
 ' Import network data from excel spreadsheet 
 '
@@ -19,7 +19,7 @@
 '
 ' Global vars and consts
 Const DebugDataPath$ = "c:\Source\bas\dev\datawks\"
-Const FILESIGNATURE$ = "ASPEN OneLiner/Power Flow Version 12.5"
+Const FILESIGNATURE$ = "ASPEN OneLiner/Power Flow"
 Const aType_Line$    = "Browser Report for Lines"
 Const aType_Mu$      = "Browser Report for Zero-Sequence Mutuals"
 Const aType_Xfmr$    = "Browser Report for Transformers: 2-Winding"
@@ -28,6 +28,7 @@ Const aType_Ps$      = "Browser Report for Phase Shifters"
 Const aType_Gen$     = "Browser Report for Generators"
 Const aType_Load$    = "Browser Report for Loads"
 Const aType_Shc$     = "Browser Report for Shunts"
+Const aType_Bus$     = "Browser Report for Buses"
 
 dim sLabels(50) As String
 dim nCodes(50) As long     
@@ -67,7 +68,7 @@ Sub main
   ' Read file header row
   aHeader$ = dataSheet.Cells(1,1).Value
   aType$   = dataSheet.Cells(4,1).Value
-  If aType = "" Or aHeader <> FILESIGNATURE Then
+  If aType = "" Or InStr(1, aHeader, FILESIGNATURE) <> 1 Then
     Print "Invalid ASPEN OneLiner Data file"
     GoTo endProgram
   End If
@@ -168,6 +169,9 @@ Function checkHeader( ByRef Array() As String, ByVal colCount, ByRef aType As St
     case aType_Shc
       checkHeader = checkHeader_Sh( Array, colcount )
       If checkHeader Then nCountCodes& = InitParamCode_Sh(sLabels,nCodes)   
+    case aType_Bus
+      checkHeader = checkHeader_Bus( Array, colcount )
+      If checkHeader Then nCountCodes& = InitParamCode_Bus(sLabels,nCodes)   
   End select
 End Function
 
@@ -203,8 +207,10 @@ Function processRow( ByRef FieldName() As String, ByRef FieldVal() As String, By
       aText$ = aText & branch1_bus1Num & " " & Trim(Left(branch1_bus1Name, nLen1-7)) & Right(branch1_bus1Name,7) & " " _
                      & branch1_bus2Num & " " & Trim(Left(branch1_bus2Name, nLen1-7)) & Right(branch1_bus2Name,7) & " " & CktID1  
     ElseIf FieldName(ii) = "Bus 1" Or FieldName(ii) = "Bus 2" Or FieldName(ii) = "Bus 3" Or FieldName(ii) = "Bus Name" Then
-      nLen = Len(FieldVal(ii))
-      aText$ = aText & Trim(Left(FieldVal(ii), nLen-7)) & " " & Right(FieldVal(ii),7)
+      If nLen > 10 Then _
+        aText$ = aText & Trim(Left(FieldVal(ii), nLen-7)) & " " & Right(FieldVal(ii),7) _
+      Else _
+        aText$ = aText & FieldVal(ii)
     Else
       aText$ = aText & FieldVal(ii)
     End If
@@ -232,6 +238,8 @@ Function processRow( ByRef FieldName() As String, ByRef FieldVal() As String, By
       processRow = processRow_Load( FieldName, FieldVal, cols )
     case aType_Shc
       processRow = processRow_Sh( FieldName, FieldVal, cols )  
+    case aType_Bus
+      processRow = processRow_Bus( FieldName, FieldVal, cols )  
   End select
 End Function
 
@@ -295,7 +303,8 @@ Function branchSearch( nType&, bus1Hnd&, bus2Hnd&, bus3Hnd&, CktID$ )
       If farBusHnd = bus2Hnd Then
         Call GetData(thisItemHnd, thisTypeID, myID$)
         myID = Trim(myID)
-        If myID = CktID Or (Len(myID) = 0 And Len(CktID) = 0) Then
+        CktIDTmp$ = "0" + CktID$
+        If myID = CktID Or myID = CktIDTmp Or (Len(myID) = 0 And Len(CktID) = 0) Then
           branchSearch = thisItemHnd
           exit Do
         End If
@@ -377,22 +386,33 @@ Function shSearch( busHnd& )
 End Function
 
  ' Set field value 
-Function SetFieldValue( sLabels() As String, nCodes() As long, nCountCodes&, sFieldVal$, thisHnd&, paramID&, nIndex)
+Function SetFieldValue( sLabels() As String, nCodes() As long, nCountCodes&, sFieldVal$, thisHnd&, paramID&, nIndex) As long
+  nChanged$ = 0
   SetFieldValue = 0
   Dim vdArray(5) As Double
-  paramType& = paramID/1000
-  paramType& = paramID - paramType*1000
-  paramType& = paramType/100
+  if paramID > 1000 then   ' V12 or earlier
+   paramType& = paramID/1000
+   paramType& = paramID - paramType*1000
+   paramType& = paramType/100
+  else
+   paramType& = paramID
+   paramType& = paramType/100
+  end if
   select case paramType&
     case 1 ' String
       sVal$ = sFieldVal
       Call GetData( thisHnd, paramID, sValtemp$ )
-      If sVal <> sValtemp Then SetFieldValue = SetData( thisHnd, paramID, sVal$ )
+      If sVal <> sValtemp Then 
+        SetFieldValue = SetData( thisHnd, paramID, sVal$ )
+        nChanged = 1
+      end if
     case 2 ' double     
       dVal# = a2d(sFieldVal)
       Call GetData( thisHnd, paramID, dValtemp# )
-      If Abs(dVal - dValtemp) > 0.00001 Then SetFieldValue = SetData( thisHnd, paramID, dVal# )     
-      Call PostData(thisHnd) 
+      If Abs(dVal - dValtemp) > 0.00001 Then 
+       SetFieldValue = SetData( thisHnd, paramID, dVal# )     
+       nChanged = 1
+      end if
     case 3 ' Integer
       If UCase(sFieldVal) = "YES" Then 
         nVal& = 1 
@@ -406,15 +426,19 @@ Function SetFieldValue( sLabels() As String, nCodes() As long, nCountCodes&, sFi
         nVal& = Val(sFieldVal)
       End If 
       Call GetData( thisHnd, paramID, nValtemp& )
-      If nVal <> nValtemp Then SetFieldValue = SetData( thisHnd, paramID, nVal& )
+      If nVal <> nValtemp Then 
+       SetFieldValue = SetData( thisHnd, paramID, nVal& )
+       nChanged = 1
+      end if
     case -5 ' Array
       Call GetData( thisHnd, paramID, vdArray() )
       If Abs(vdArray(nIndex) - a2d(sFieldVal)) > 0.000001 Then
         vdArray(nIndex) = a2d(sFieldVal)
         SetFieldValue = SetData( thisHnd, paramID, vdArray() ) 
+        nChanged = 1
       End If
-      Call PostData(thisHnd)       
   End select
+    If nChanged And SetFieldValue >= 0 Then SetFieldValue = PostData(thisHnd)       
 End Function
 
  ' Convert string to double
@@ -839,58 +863,66 @@ End Function
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 Function InitParamCode_Xfmr3( l() As String, c() As long ) As long
   l(1)  = "In Serv"
-  l(2)  = "Tap1 V(pu)"
-  l(3)  = "Tap2 V(pu)"
-  l(4)  = "Tap3 V(pu)"
-  l(5)  = "Zps"
-  l(6)  = "Zps"
-  l(7)  = "Zpt"
-  l(8)  = "Zpt"
-  l(9)  = "Zst"
-  l(10) = "Zst"
-  l(11) = "Zps0"
-  l(12) = "Zps0"
-  l(13) = "Zpt0"
-  l(14) = "Zpt0"
-  l(15) = "Zst0"  
-  l(16) = "Zst0" 
-  l(17) = "Zg1"
-  l(18) = "Zg1"
-  l(19) = "Zg2"
-  l(20) = "Zg2"
-  l(21) = "Zg3"
-  l(22) = "Zg3"
-  l(23) = "Zgn"
-  l(23) = "Zgn"
-  l(25) = "B"
-  l(26) = "B0"
+  l(2)  = "Base MVA"
+  l(3)  = "MVA A"
+  l(4)  = "MVA B"
+  l(5)  = "MVA C"
+  l(6)  = "Tap1 V(pu)"
+  l(7)  = "Tap2 V(pu)"
+  l(8)  = "Tap3 V(pu)"
+  l(9)  = "Zps"
+  l(10) = "Zps"
+  l(11) = "Zpt"
+  l(12) = "Zpt"
+  l(13) = "Zst"
+  l(14) = "Zst"
+  l(15) = "Zps0"
+  l(16) = "Zps0"
+  l(17) = "Zpt0"
+  l(18) = "Zpt0"
+  l(19) = "Zst0"  
+  l(20) = "Zst0" 
+  l(21) = "Zg1"
+  l(22) = "Zg1"
+  l(23) = "Zg2"
+  l(24) = "Zg2"
+  l(25) = "Zg3"
+  l(26) = "Zg3"
+  l(27) = "Zgn"
+  l(28) = "Zgn"
+  l(29) = "B"
+  l(30) = "B0"
 
   c(1)  = X3_nInService
-  c(2)  = X3_dTap1
-  c(3)  = X3_dTap2
-  c(4)  = X3_dTap3
-  c(5)  = X3_dRps
-  c(6)  = X3_dXps
-  c(7)  = X3_dRpt
-  c(8)  = X3_dXpt
-  c(9)  = X3_dRst
-  c(10) = X3_dXst  
-  c(11) = X3_dR0ps
-  c(12) = X3_dX0ps
-  c(13) = X3_dR0pt
-  c(14) = X3_dX0pt
-  c(15) = X3_dR0st
-  c(16) = X3_dX0st
-  c(17) = X3_dRG1
-  c(18) = X3_dXG1
-  c(19) = X3_dRG2
-  c(20) = X3_dXG2
-  c(21) = X3_dRG3
-  c(22) = X3_dXG3
-  c(23) = X3_dRGN
-  c(24) = X3_dXGN
-  c(25) = X3_dB
-  c(26) = X3_dB0
+  c(2)  = X3_dBaseMVA
+  c(3)  = X3_dMVA1
+  c(4)  = X3_dMVA2
+  c(5)  = X3_dMVA3
+  c(6)  = X3_dTap1
+  c(7)  = X3_dTap2
+  c(8)  = X3_dTap3
+  c(9)  = X3_dRps
+  c(10) = X3_dXps
+  c(11) = X3_dRpt
+  c(12) = X3_dXpt
+  c(13) = X3_dRst
+  c(14) = X3_dXst  
+  c(15) = X3_dR0ps
+  c(16) = X3_dX0ps
+  c(17) = X3_dR0pt
+  c(18) = X3_dX0pt
+  c(19) = X3_dR0st
+  c(20) = X3_dX0st
+  c(21) = X3_dRG1
+  c(22) = X3_dXG1
+  c(23) = X3_dRG2
+  c(24) = X3_dXG2
+  c(25) = X3_dRG3
+  c(26) = X3_dXG3
+  c(27) = X3_dRGN
+  c(28) = X3_dXGN
+  c(29) = X3_dB
+  c(30) = X3_dB0
 
 '  c(27) = X3_dLTCCenterTap
 '  c(28) = X3_dLTCstep
@@ -900,7 +932,7 @@ Function InitParamCode_Xfmr3( l() As String, c() As long ) As long
 '  c(32) = X3_nLTCGanged
   
 
-  InitParamCode_Xfmr3 = 26
+  InitParamCode_Xfmr3 = 30
 End Function
 Function checkHeader_Xfmr3( ByRef Array() As String, ByVal colCount )
   okBus1  = false
@@ -952,7 +984,7 @@ Function processRow_Xfmr3( ByRef FieldName() As String, ByRef FieldVal() As Stri
     If paramID = 0 Or sFieldVal = "N/A"Then 
       GoTo NextIteration
     End If
-    Select case paramID
+    Select case paramID    
       case X3_dTap1, X3_dTap2, X3_dTap3
         nPos = InStr(sFieldVal, "R")
         If nPos > 0 Then sTemp = Left(sFieldVal,nPos-1)
@@ -1427,3 +1459,92 @@ Function processRow_Sh( ByRef FieldName() As String, ByRef FieldVal() As String,
     PrintTTY("  Error: Nothing to update" )
   End If
 End Function
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+''''''''''''''''''''''''''''''''Bus'''''''''''''''''''''''''''''''''
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+Function InitParamCode_Bus( l() As String, c() As long ) As long
+  l(1)  = "Bus Name"
+  l(2)  = "Location"
+  l(3)  = "Memo"
+  l(4)  = "No."
+  l(5)  = "Area"
+  l(6)  = "Zone"
+  l(7)  = "Tap Bus"
+  l(8)  = "Sub. Gp."
+  l(9)  = "X"
+  l(10) = "Y"
+
+  c(1)  = BUS_sName
+  c(2)  = BUS_sLocation
+  c(3)  = BUS_sComment
+  c(4)  = BUS_nNumber
+  c(5)  = BUS_nArea
+  c(6)  = BUS_nZone
+  c(7)  = BUS_nTapBus
+  c(8)  = BUS_nSubGroup
+  c(9)  = BUS_dSPCx
+  c(10) = BUS_dSPCy
+
+  InitParamCode_Bus = 10
+End Function
+
+Function checkHeader_Bus( ByRef Array() As String, ByVal colCount )
+  okBusName  = false
+  okKV       = false
+  checkHeader_Bus = false
+  For ii = 1 to colCount
+    If Array(ii) = "Bus Name" Then okBusName  = true
+    If Array(ii) = "kV"   Then okKV = true
+    If okBusName And okKV Then
+      checkHeader_Bus = true
+      exit For
+    End If
+  Next
+End Function
+Function processRow_Bus( ByRef FieldName() As String, ByRef FieldVal() As String, ByVal cols ) As long
+  processRow_Bus = 0
+  ' Find object handle
+  busHnd& = -1
+  sBusName$ = ""
+  dBuskV#   = 0.0
+  sFieldVal = ""
+  For ii = 1 to cols
+    If FieldName(ii) = "Bus Name" Then sBusName$ = FieldVal(ii)
+    If FieldName(ii) = "kV"   Then dBuskV = Val(FieldVal(ii))
+    If sBusName <> "" And dBuskV <> 0.0 Then  
+      If findBusByName( sBusName, dBuskV, busHnd& ) = 0 Then 
+        printTTY("  Error: Object not found")
+        exit Function
+      End If
+      exit For
+    End If
+  Next
+  countUpdated = 0
+  listUpdated$ = ""
+  For ii = 1 to cols
+    nIndex = 0
+    sFieldVal$ = FieldVal(ii)
+    paramID = LookupParamCode(sLabels,nCodes,nCountCodes,FieldName(ii),1)
+    If paramID = 0 Then 
+      GoTo NextIteration
+    elseIf paramID = BUS_nTapBus Then 
+      If UCase(sFieldVal$) = "YES" Then sFieldVal$ = "1" Else sFieldVal$ = "0"
+    End If   
+    If 0 < SetFieldValue(sLabels,nCodes,nCountCodes,sFieldVal,busHnd,paramID&,nIndex) Then
+      countUpdated = countUpdated + 1
+      If listUpdated <> "" Then listUpdated = listUpdated & "," & FieldName(ii) Else listUpdated = FieldName(ii)
+    End If
+    NextIteration
+  Next
+  If countUpdated > 0 Then
+    If PostData(busHnd) = 0 Then
+      PrintTTY("  Error: " + ErrorString() )
+      exit Function
+    End If
+    PrintTTY("  Updated: " & listUpdated )
+    processRow_Bus = countUpdated
+  Else
+    PrintTTY("  Error: Nothing to update" )
+  End If
+End Function
+
