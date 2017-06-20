@@ -12,9 +12,9 @@ Sub main()
  Dim ShowFaultFlag As Long
  Dim BranchHnd As Long
  Dim FaultString As String
- Dim FaultList(5000) As String
- Dim FaultIndex(5000) As Integer
- Dim FltRmvIndex(5000) As Integer
+ Dim FaultList() As String
+ Dim FaultIndex() As Integer
+ Dim FltRmvIndex() As Integer
  
  ' Get picked object number
  If GetEquipment( TC_PICKED, ObjHnd ) = 0 Or EquipmentType( ObjHnd ) <> TC_RLYGROUP Then 
@@ -35,11 +35,11 @@ Sub main()
  ShowFaultFlag = SF_NEXT   ' Show next fault
  Wend
  
- ReDim FaultList(FtCounts + 1)
- ReDim FaultIndex(FtCounts + 1)
- ReDim FltRmvIndex(FtCounts + 1)
+ ReDim FaultList(FtCounts*6)
+ ReDim FaultIndex(FtCounts*6)
+ ReDim FltRmvIndex(FtCounts*6)
 
- For ii = 0 to FtCounts
+ For ii = 0 to 6*FtCounts - 1
    FaultList(ii)  = ""
    FaultIndex(ii) = -1 
  Next ii
@@ -50,15 +50,22 @@ Sub main()
  While PickFault( ShowFaultFlag ) > 0
    FaultString = FaultDescription()   ' Get fault description 
    ' Display fault descripting in multiple rows
-   nPos = InStr( 1,FaultString,Chr(10) )   
+   nPos = InStr( 1,FaultString,Chr(10) )  
+   nLoop = 0 
    While nPos > 0
     ALine$ = Left$( FaultString$, nPos )
     FaultList(FtRows) = ALine$
     FaultIndex(FtRows) = FtIndex
     FtRows = FtRows + 1
-    BLine$ = Right$( FaultString$, Len(FaultString$) - nPos )
-    FaultString$ = "  " + BLine$
-    nPos = InStr( 1,FaultString,Chr(10) )
+    nLoop = nLoop + 1
+    If nLoop = 5 Then
+      FaultString = "       ..."
+      nPos = 0
+    Else
+      BLine$ = Right$( FaultString$, Len(FaultString$) - nPos )
+      FaultString$ = "  " + BLine$
+      nPos = InStr( 1,FaultString,Chr(10) )
+    End If
    Wend
    FaultList(FtRows) = FaultString
    FaultIndex(FtRows) = FtIndex
@@ -210,7 +217,7 @@ End Dialog
        While nPos > 0
         ALine$ = Left$( FaultString$, nPos - 1 )
         BLine$ = Right$( FaultString$, Len(FaultString$) - nPos )
-        FaultString$ = ALine$ + "," + BLine$
+        FaultString$ = ALine$ + "|" + BLine$
         nPos = InStr( 1,FaultString,Chr(10) )
        Wend
        FtCounts = FtCounts + 1  
@@ -250,7 +257,7 @@ End Dialog
    End If
    FltRmvIndex(RmvNum) = FaultIndex(dlg.ListBox) 
    RmvNum = RmvNum + 1 
-   For ii = 0 to FtRows
+   For ii = 0 to FtRows - 1
      FaultList(ii)  = ""
      FaultIndex(ii) = -1 
    Next ii
@@ -266,15 +273,22 @@ End Dialog
    Next ii
    If nCheck <> 1 Then
      FaultString = FaultDescription()   ' Get fault description 
-     nPos = InStr( 1,FaultString,Chr(10) )   
+     nPos = InStr( 1,FaultString,Chr(10) )  
+     nLoop = 0  
      While nPos > 0
       ALine$ = Left$( FaultString$, nPos )
       FaultList(FtCounts) = ALine$
       FaultIndex(FtCounts) = FtIndex
       FtCounts = FtCounts + 1
-      BLine$ = Right$( FaultString$, Len(FaultString$) - nPos )
-      FaultString$ = "  "+BLine$
-      nPos = InStr( 1,FaultString,Chr(10) )
+      nLoop = nLoop + 1
+      If nLoop = 5 Then
+        FaultString = "       ..."
+        nPos = 0
+      Else
+        BLine$ = Right$( FaultString$, Len(FaultString$) - nPos )
+        FaultString$ = "  "+BLine$
+        nPos = InStr( 1,FaultString,Chr(10) )
+      End If
      Wend
      FaultList(FtCounts) = FaultString
      FaultIndex(FtCounts) = FtIndex

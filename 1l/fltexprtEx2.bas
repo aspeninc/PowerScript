@@ -29,6 +29,7 @@ Const SQRT2 = 1.41421356
 Const MXFLT = 100
 ' Global variable declaration
 Dim FltList(MXFLT) As Long
+Dim FltTitle(MXFLT) As String
 Dim FltDesc(MXFLT) As String
 Dim Time1(MXFLT) As Double, Time2(MXFLT) As Double, Time3(MXFLT) As Double, Time4(MXFLT) As Double
 Dim TripOption(MXFLT) As Long, Comments(MXFLT) As String, FName(MXFLT) As String
@@ -132,7 +133,7 @@ Sub main()
    BranchName$ = Bus1Name + "-" + Bus2Name + " " + sID + sCode
 
    doPage1:
-   nCode = PageOne( FltList, FltDesc, FltCount&, SingleFlt& )
+   nCode = PageOne( FltList, FltTitle, FltDesc, FltCount&, SingleFlt& )
    If nCode = 0 Then Exit Sub
 
    ' Copy location and fault description to use as comment
@@ -159,7 +160,7 @@ Sub main()
    PT# = 1000
    If SingleFlt = 0 Then    ' Export selected faults to separate files
      For ii& = 1 To FltCount
-       TitleText$ = FltDesc(ii)
+       TitleText$ = FltTitle(ii)
        nCode = PageTwo( ii, TitleText$ )
        If nCode = 0 Then Exit Sub
        If nCode = 2 Then 
@@ -286,7 +287,7 @@ End Dialog
 '   Solicit user input on the scope of the export
 '
 '======================================================================================
-Function PageOne( ByRef FltList() As Long, ByRef FltDesc() As String, _
+Function PageOne( ByRef FltList() As Long, ByRef FltTitle() As String, ByRef FltDesc() As String, _
                   ByRef FltCount As Long, ByRef SingleFlt ) As Long
   Dim dlg As PAGE1
 
@@ -298,6 +299,7 @@ Function PageOne( ByRef FltList() As Long, ByRef FltDesc() As String, _
     ' Need to insert chr(13) at the end of each line to make it
     ' show up properly in the edit box
     CharPos = InStr( 1, FltString, Chr(10) )
+    TempStr$ = FltString$
     While CharPos > 0
       TempStr$   = Left$( FltString, CharPos - 1 )
       If Right( TempStr, 3 ) <> "on:" Then TempStr = TempStr + Chr(13) + Chr(10)
@@ -326,7 +328,10 @@ Function PageOne( ByRef FltList() As Long, ByRef FltDesc() As String, _
       TempStr$       = Left$( ALine$, CharPos1 - 1 )
       FltCount          = FltCount + 1
       FltList(FltCount) = Val( TempStr$ )
-      FltDesc(FltCount) = ALine
+      FltTitle(FltCount) = ALine
+      FltDesc(FltCount) = ALine 
+    Else
+      FltDesc(FltCount) = FltDesc(FltCount) + Chr(13) + Chr(10) + ALine$
     End If
     AString$ = Mid$(AString$, CharPos+1, 9999 )
     CharPos  = InStr( 1, AString$, Chr(10) )

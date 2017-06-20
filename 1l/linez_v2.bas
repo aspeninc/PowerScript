@@ -26,33 +26,35 @@ Sub main()
    LineCount  = 0
    PickedHnd& = 0
    While GetEquipment( TC_LINE, PickedHnd& ) > 0
-     Index = PickedHnd-hndOffset
+     Index = PickedHnd&-hndOffset
      If Index >= maxLines Then
-       Print "Too many lines in this network. Increase maxLines and try again."
+       Print "Too many lines in this network. Edit script code to increase maxLines and try again."
        Stop
      End If
      ProcessedHnd(Index) = 0
    Wend
    
    If GetEquipment( TC_PICKED, PickedHnd& ) > 0 And _
-      EquipmentType( PickedHnd ) = TC_LINE Then
-      Call compuOneLine( PickedHnd )
+      EquipmentType( PickedHnd& ) = TC_LINE Then
+      Call compuOneLine( PickedHnd& )
       ' Do it for only selected line
       LineCount  = 1
    Else
+      resp = MsgBox( "Do you want to print impedance of all lines in kV range: " & KVMin & "-" & KVMax, 4+32, "Line Impedance" ) 
+      If 6 <> resp Then Stop      
       ' Do it for all lines withing kV range
       PickedHnd& = 0
       LineCount  = 0
       While GetEquipment( TC_LINE, PickedHnd& ) > 0
-        If ProcessedHnd(PickedHnd-hndOffset) = 0 Then
-          Call GetData( PickedLineHnd, LN_nBus1Hnd, Bus1Hnd& )
+        If ProcessedHnd(PickedHnd&-hndOffset) = 0 Then
+          Call GetData( PickedHnd, LN_nBus1Hnd, Bus1Hnd& )
           Call getdata( Bus1Hnd, BUS_dKVNominal,dKV# )
           If dKV >= KVMin And dKV <= KVmax Then
             Call GetData( Bus1Hnd, BUS_nTapBus, TapCode1& )
-            Call GetData( PickedLineHnd, LN_nBus2Hnd, Bus2Hnd& )
+            Call GetData( PickedHnd, LN_nBus2Hnd, Bus2Hnd& )
             Call GetData( Bus2Hnd, BUS_nTapBus, TapCode2& )
             If TapCode1 = 0 Or TapCode2 = 0 Then
-              Call compuOneLine( PickedHnd )       ' Want to start from a real bus
+              Call compuOneLine( PickedHnd& )       ' Want to start from a real bus
               LineCount = LineCount + 1
             End If
           End If
@@ -64,17 +66,18 @@ Sub main()
      
 End Sub  
    
-Function compuOneLine( ByVal PickedLineHnd& )   
+Function compuOneLine( ByVal nLineHnd& )   
    
    ' Get the branch bus handle
-   Call GetData( PickedLineHnd, LN_nBus1Hnd, Bus1Hnd& )
-   Call GetData( PickedLineHnd, LN_nBus2Hnd, Bus2Hnd& )
-   Call GetData( PickedLineHnd, LN_dR, dR# )
-   Call GetData( PickedLineHnd, LN_dX, dX# )
-   Call GetData( PickedLineHnd, LN_dR0, dR0# )
-   Call GetData( PickedLineHnd, LN_dX0, dX0# )
-   Call GetData( PickedLineHnd, LN_dLength, dLength# )
-   Call GetData( PickedLineHnd, LN_sName, sName$ )
+   Call GetData( nLineHnd, LN_nBus1Hnd, Bus1Hnd& )
+   Call GetData( nLineHnd, LN_nBus2Hnd, Bus2Hnd& )
+   Call GetData( nLineHnd, LN_dR, dR# )
+   Call GetData( nLineHnd, LN_dX, dX# )
+   Call GetData( nLineHnd, LN_dR0, dR0# )
+   Call GetData( nLineHnd, LN_dX0, dX0# )
+   Call GetData( nLineHnd, LN_dLength, dLength# )
+   Call GetData( nLineHnd, LN_sName, sName$ )
+   Call GetData( Bus1Hnd, BUS_dKVNominal, dKV# )
    BusListCount = 2
    If Bus1Hnd > Bus2Hnd Then
      BusHndList(0) = Bus2Hnd
@@ -83,13 +86,13 @@ Function compuOneLine( ByVal PickedLineHnd& )
      BusHndList(0) = Bus1Hnd
      BusHndList(1) = Bus2Hnd
    End If
-   aLine1$ = FullBusName(Bus1Hnd) + " - " + FullBusName(Bus2Hnd) + ": " + _
-                      "Z=" + Format(dR#,"0.00000") + "+j" + Format(dX#,"0.00000") + " " + _
-                      "Zo=" + Format(dR0#,"0.00000") + "+j" + Format(dX0#,"0.00000") + " " + _
-                      "L=" + Format(dLength#,"0.00000")
+   aLine1$ = FullBusName(Bus1Hnd) & " - " & FullBusName(Bus2Hnd) & ": " & _
+                      "Z=" & printImpedance(dR#,dX#,dKV#) & " " & _
+                      "Zo=" & printImpedance(dR0#,dX0#,dKV#) & " " & _
+                      "L=" & Format(dLength#,"0.0")
    PrintTTY(" ")
 '   PrintTTY(aLine$)
-   ProcessedHnd(PickedLineHnd-hndOffset) = 1
+   ProcessedHnd(nLineHnd-hndOffset) = 1
    
    ' find tap segments on Bus1 side
    BusHnd&  = Bus1Hnd
@@ -111,9 +114,9 @@ Function compuOneLine( ByVal PickedLineHnd& )
      dR0 = dR0 + dR0n
      dX0 = dX0 + dX0n
      aLine$ = FullBusName(BusHnd) + " - " + FullBusName(BusFarHnd) + ": " + _
-                      "Z=" + Format(dRn#,"0.00000") + "+j" + Format(dXn#,"0.00000") + " " + _
-                      "Zo=" + Format(dR0n#,"0.00000") + "+j" + Format(dX0n#,"0.00000") + " " + _
-                      "L=" + Format(dL#,"0.00000")
+                      "Z=" + printImpedance(dRn#,dXn#,dKV#) + " " + _
+                      "Zo=" + printImpedance(dR0n#,dX0n#,dKV#) + " " + _
+                      "L=" + Format(dL#,"0.0")
      PrintTTY("Segment: " & aLine$)
      ProcessedHnd(LineHnd-hndOffset) = 1
      BusHndList(BusListCount) = BusHnd
@@ -143,9 +146,9 @@ Function compuOneLine( ByVal PickedLineHnd& )
      dR0 = dR0 + dR0n
      dX0 = dX0 + dX0n
      aLine$ = FullBusName(BusHnd) + " - " + FullBusName(BusFarHnd) + ": " + _
-                      "Z=" + Format(dRn#,"0.00000") + "+j" + Format(dXn#,"0.00000") + " " + _
-                      "Zo=" + Format(dR0n#,"0.00000") + "+j" + Format(dX0n#,"0.00000") + " " + _
-                      "L=" + Format(dL#,"0.00000")
+                      "Z=" + printImpedance(dRn#,dXn#,dKV#) + " " + _
+                      "Zo=" + Format(dR0n#,dX0n#,dKV#) + " " + _
+                      "L=" + Format(dL#,"0.0")
      PrintTTY("Segment: " & aLine$)
      ProcessedHnd(LineHnd-hndOffset) = 1
      BusHndList(BusListCount) = BusHnd
@@ -186,9 +189,9 @@ Function compuOneLine( ByVal PickedLineHnd& )
      Next 
      breakFor:
      aLine1$ = FullBusName(BusHndList(0)) + " - " + FullBusName(BusHndList(1)) + ": " + _
-                      "Z=" + Format(dR,"0.00000") + "+j" + Format(dX,"0.00000") + " " + _
-                      "Zo=" + Format(dR0,"0.00000") + "+j" + Format(dX0,"0.00000") + " " + _
-                      "L=" + Format(dLength,"0.00000")
+                      "Z=" + printImpedance(dR,dX,dKV) + " " + _
+                      "Zo=" + printImpedance(dR0,dX0,dKV) + " " + _
+                      "L=" + Format(dLength,"0.0")
    End If
    PrintTTY("Line: " & aLine1$)
 End Function
@@ -214,4 +217,15 @@ Function FindTapSegmentAtBus( BusHnd&, sName$ ) As long
     FindTapSegmentAtBus = LineHnd
     ContinueWhile:
   Wend
+End Function
+
+Function printImpedance( dR#, dX#, dKV# ) As String
+ dMag = Sqr( dR#^2 + dX#^2 )*dKV#^2/100
+ If dR# <> 0.0 Then 
+   dAng = Atn(dX#/dR#)*180/3.14156 
+ Else 
+   if dX# > 0 then dAng = 90 else dAng = -90
+ End If
+ printImpedance = Format(dR#,"0.00000") & "+j" & Format(dX#,"0.00000") & "pu" _
+          & "(" & Format(dMag,"0.00") & "@" & Format(dAng,"0.00") & "Ohm)"
 End Function

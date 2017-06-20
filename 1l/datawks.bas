@@ -18,7 +18,6 @@
 '
 '
 ' Global vars and consts
-Const DebugDataPath$ = "c:\Source\bas\dev\datawks\"
 Const FILESIGNATURE$ = "ASPEN OneLiner/Power Flow"
 Const aType_Line$    = "Browser Report for Lines"
 Const aType_Mu$      = "Browser Report for Zero-Sequence Mutuals"
@@ -41,15 +40,12 @@ Sub main
   Dim outArr(50) As String
   dim fieldNames(50) As String 
   
-  DataFile$ = InputBox("Enter excel file name")
+  ExcelFile$ = FileOpenDialog( "", "Excel File (*.csv)||", 0 )
   
-  If Len(DataFile) = 0 Then 
+  If Len(ExcelFile) = 0 Then 
     Print "Bye"
     Stop
   End If
-  
-  ExcelFile$ = GetOLRFilePath()  + DataFile
-  
 
   printTTY("")
   printTTY("====================================================================================================================================")
@@ -430,7 +426,7 @@ Function SetFieldValue( sLabels() As String, nCodes() As long, nCountCodes&, sFi
        SetFieldValue = SetData( thisHnd, paramID, nVal& )
        nChanged = 1
       end if
-    case -5 ' Array
+    case 5 ' Array
       Call GetData( thisHnd, paramID, vdArray() )
       If Abs(vdArray(nIndex) - a2d(sFieldVal)) > 0.000001 Then
         vdArray(nIndex) = a2d(sFieldVal)
@@ -1157,7 +1153,7 @@ Function InitParamCode_Gen( l() As String, c() As long ) As long
   l(21) = "Q Min"
   l(22) = "Q Max"
 
-  c(1)  = GE_nActive
+  c(1)  = GU_nOnline
   c(2)  = GE_dVSourcePU
   c(3)  = GE_dRefAngle
   c(4)  = GE_nFixedPQ
@@ -1225,7 +1221,7 @@ Function processRow_Gen( ByRef FieldName() As String, ByRef FieldVal() As String
     If paramID = 0 Then 
       GoTo NextIteration
     End If
-    If paramID = GE_nActive Or paramID = GE_dVSourcePU Or paramID = GE_dRefAngle Or _
+    If paramID = GE_dVSourcePU Or paramID = GE_dRefAngle Or _
        paramID = GE_nFixedPQ Or paramID = GE_dCurrLimit1 Or paramID = GE_dCurrLimit2 Then
       If 0 < SetFieldValue(sLabels,nCodes,nCountCodes,sFieldVal,genHnd,paramID&,nIndex) Then
         countUpdated = countUpdated + 1
@@ -1528,7 +1524,7 @@ Function processRow_Bus( ByRef FieldName() As String, ByRef FieldVal() As String
     If paramID = 0 Then 
       GoTo NextIteration
     elseIf paramID = BUS_nTapBus Then 
-      If UCase(sFieldVal$) = "YES" Then sFieldVal$ = "1" Else sFieldVal$ = "0"
+      If UCase(sFieldVal$) = "T" Or UCase(sFieldVal) = "3T" Then sFieldVal$ = "1" Else sFieldVal$ = "0"
     End If   
     If 0 < SetFieldValue(sLabels,nCodes,nCountCodes,sFieldVal,busHnd,paramID&,nIndex) Then
       countUpdated = countUpdated + 1
