@@ -2,7 +2,7 @@
 '
 ' DATAWKS.BAS
 '
-' Version 2.1
+' Version 2.2
 '
 ' Import network data from excel spreadsheet 
 '
@@ -28,6 +28,7 @@ Const aType_Gen$     = "Browser Report for Generators"
 Const aType_Load$    = "Browser Report for Loads"
 Const aType_Shc$     = "Browser Report for Shunts"
 Const aType_Bus$     = "Browser Report for Buses"
+Const aType_Breaker$ = "Browser Report for Breakers"
 
 dim sLabels(50) As String
 dim nCodes(50) As long     
@@ -167,7 +168,10 @@ Function checkHeader( ByRef Array() As String, ByVal colCount, ByRef aType As St
       If checkHeader Then nCountCodes& = InitParamCode_Sh(sLabels,nCodes)   
     case aType_Bus
       checkHeader = checkHeader_Bus( Array, colcount )
-      If checkHeader Then nCountCodes& = InitParamCode_Bus(sLabels,nCodes)   
+      If checkHeader Then nCountCodes& = InitParamCode_Bus(sLabels,nCodes)	
+    case aType_Breaker
+      checkHeader = checkHeader_Breaker( Array, colcount )
+      If checkHeader Then nCountCodes& = InitParamCode_Breaker(sLabels,nCodes)	  
   End select
 End Function
 
@@ -236,6 +240,8 @@ Function processRow( ByRef FieldName() As String, ByRef FieldVal() As String, By
       processRow = processRow_Sh( FieldName, FieldVal, cols )  
     case aType_Bus
       processRow = processRow_Bus( FieldName, FieldVal, cols )  
+    case aType_Breaker
+      processRow = processRow_Breaker( FieldName, FieldVal, cols )   
   End select
 End Function
 
@@ -359,6 +365,16 @@ Function loadunitSearch( busHnd&, CktID$ )
   Wend
 End Function
 
+ ' Find load handle
+Function loadSearch( busHnd& )
+  loadSearch = 0
+  loadHnd&   = 0
+  If GetBusEquipment( busHnd, TC_LOAD, loadHnd& ) > 0  Then
+    loadSearch = loadHnd&
+  End If
+End Function
+
+
  ' Find shunt unit handle 
 Function shunitSearch( busHnd&, CktID$ )
   shunitSearch = 0
@@ -381,19 +397,42 @@ Function shSearch( busHnd& )
   End If
 End Function
 
+ ' Find breaker handle
+Function breakerSearch( busHnd&, breakerName$ )
+  breakerSearch = 0
+  breakerHnd&   = 0
+  If GetBusEquipment( busHnd, TC_BREAKER, breakerHnd& ) > 0 Then
+    Call GetData(breakerHnd, Bk_sID, myID$)
+    myID = Trim(myID)
+    If myID = breakerName Then
+      breakerSearch = breakerHnd
+    End If
+  End If
+End Function
+
  ' Set field value 
 Function SetFieldValue( sLabels() As String, nCodes() As long, nCountCodes&, sFieldVal$, thisHnd&, paramID&, nIndex) As long
   nChanged$ = 0
   SetFieldValue = 0
   Dim vdArray(5) As Double
-  if paramID > 1000 then   ' V12 or earlier
-   paramType& = paramID/1000
-   paramType& = paramID - paramType*1000
-   paramType& = paramType/100
-  else
-   paramType& = paramID
-   paramType& = paramType/100
-  end if
+  If ParamID = -999 Then
+   sVal$ = sFieldVal
+   sValtemp = GetObjMemo( thisHnd ) 
+   If sVal <> sValtemp Then 
+    SetFieldValue = SetObjMemo( thisHnd&, sVal$ )
+    nChanged = 1
+    paramType& = 0
+    End If
+  Else
+   If paramID > 1000 Then   ' V12 or earlier
+    paramType& = paramID/1000
+    paramType& = paramID - paramType*1000
+    paramType& = paramType/100
+   Else
+    paramType& = paramID
+    paramType& = paramType/100
+   End If
+  End If
   select case paramType&
     case 1 ' String
       sVal$ = sFieldVal
@@ -401,7 +440,7 @@ Function SetFieldValue( sLabels() As String, nCodes() As long, nCountCodes&, sFi
       If sVal <> sValtemp Then 
         SetFieldValue = SetData( thisHnd, paramID, sVal$ )
         nChanged = 1
-      end if
+      End If
     case 2 ' double     
       dVal# = a2d(sFieldVal)
       Call GetData( thisHnd, paramID, dValtemp# )
@@ -494,6 +533,7 @@ Function InitParamCode_Line( l() As String, c() As long ) As long
   l(18) = "Rating B"
   l(19) = "Rating C"
   l(20) = "Rating D"
+  l(21) = "Memo"
   
   c(1)  = LN_nInService
   c(2)  = LN_sName
@@ -515,8 +555,9 @@ Function InitParamCode_Line( l() As String, c() As long ) As long
   c(18) = LN_vdRating
   c(19) = LN_vdRating
   c(20) = LN_vdRating
+  c(21) = -999
   
-  InitParamCode_Line = 20
+  InitParamCode_Line = 21
 End Function
 Function checkHeader_Lines( ByRef Array() As String, ByVal colCount )
   okBus1  = false
@@ -616,6 +657,7 @@ Function InitParamCode_Mu( l() As String, c() As long ) As long
   l(4)  = "To Ln.1"
   l(5)  = "From Ln.2"
   l(6)  = "To Ln.2"
+  l(7)  = "Memo"
   
   c(1)  = MU_dR
   c(2)  = MU_dX
@@ -623,8 +665,9 @@ Function InitParamCode_Mu( l() As String, c() As long ) As long
   c(4)  = MU_dTo1
   c(5)  = MU_dFrom2
   c(6)  = MU_dTo2
+  c(7)  = -999
   
-  InitParamCode_Mu = 6
+  InitParamCode_Mu = 7
 End Function
 Function checkHeader_Mu( ByRef Array() As String, ByVal colCount )
   okLine1  = false
@@ -746,6 +789,7 @@ Function InitParamCode_Xfmr( l() As String, c() As long ) As long
   l(21) = "ZG2"
   l(22) = "ZGN"
   l(23) = "ZGN"
+  l(24) = "Memo"
 
   c(1)  = XR_nInService
   c(2)  = XR_dTap1
@@ -770,8 +814,9 @@ Function InitParamCode_Xfmr( l() As String, c() As long ) As long
   c(21) = XR_dXG2
   c(22) = XR_dRGN
   c(23) = XR_dXGN
+  c(24) = -999
 
-  InitParamCode_Xfmr = 23
+  InitParamCode_Xfmr = 24
 End Function
 Function checkHeader_Xfmr( ByRef Array() As String, ByVal colCount )
   okBus1  = false
@@ -888,6 +933,7 @@ Function InitParamCode_Xfmr3( l() As String, c() As long ) As long
   l(28) = "Zgn"
   l(29) = "B"
   l(30) = "B0"
+  l(31) = "Memo"
 
   c(1)  = X3_nInService
   c(2)  = X3_dBaseMVA
@@ -919,6 +965,7 @@ Function InitParamCode_Xfmr3( l() As String, c() As long ) As long
   c(28) = X3_dXGN
   c(29) = X3_dB
   c(30) = X3_dB0
+  c(31) = -999
 
 '  c(27) = X3_dLTCCenterTap
 '  c(28) = X3_dLTCstep
@@ -928,7 +975,7 @@ Function InitParamCode_Xfmr3( l() As String, c() As long ) As long
 '  c(32) = X3_nLTCGanged
   
 
-  InitParamCode_Xfmr3 = 30
+  InitParamCode_Xfmr3 = 31
 End Function
 Function checkHeader_Xfmr3( ByRef Array() As String, ByVal colCount )
   okBus1  = false
@@ -1043,6 +1090,7 @@ Function InitParamCode_Ps( l() As String, c() As long ) As long
   l(14) = "Angle Max."
   l(15) = "Targ.MW Min"
   l(16) = "Targ.MW Max"
+  l(17) = "Memo"
   
   c(1)  = PS_nInService
   c(2)  = PS_sName
@@ -1060,8 +1108,9 @@ Function InitParamCode_Ps( l() As String, c() As long ) As long
   c(14) = PS_dAngleMax
   c(15) = PS_dMWmin
   c(16) = PS_dMWmax
+  c(17) = -999
   
-  InitParamCode_Ps = 16
+  InitParamCode_Ps = 17
 End Function
 Function checkHeader_Ps( ByRef Array() As String, ByVal colCount )
   okBus1  = false
@@ -1152,6 +1201,7 @@ Function InitParamCode_Gen( l() As String, c() As long ) As long
   l(20) = "P Max"
   l(21) = "Q Min"
   l(22) = "Q Max"
+  l(23) = "Memo"
 
   c(1)  = GU_nOnline
   c(2)  = GE_dVSourcePU
@@ -1175,8 +1225,9 @@ Function InitParamCode_Gen( l() As String, c() As long ) As long
   c(20) = GU_dPmax
   c(21) = GU_dQmin
   c(22) = GU_dQmax
+  c(23) = -999
   
-  InitParamCode_Gen = 22
+  InitParamCode_Gen = 23
 End Function
 Function checkHeader_Gen( ByRef Array() As String, ByVal colCount )
   okBusName  = false
@@ -1222,7 +1273,8 @@ Function processRow_Gen( ByRef FieldName() As String, ByRef FieldVal() As String
       GoTo NextIteration
     End If
     If paramID = GE_dVSourcePU Or paramID = GE_dRefAngle Or _
-       paramID = GE_nFixedPQ Or paramID = GE_dCurrLimit1 Or paramID = GE_dCurrLimit2 Then
+       paramID = GE_nFixedPQ Or paramID = GE_dCurrLimit1 Or _ 
+       paramID = GE_dCurrLimit2 Or paramID = -999 Then
       If 0 < SetFieldValue(sLabels,nCodes,nCountCodes,sFieldVal,genHnd,paramID&,nIndex) Then
         countUpdated = countUpdated + 1
         If listUpdated <> "" Then listUpdated = listUpdated & "," & FieldName(ii) Else listUpdated = FieldName(ii)
@@ -1283,6 +1335,7 @@ Function InitParamCode_Load( l() As String, c() As long ) As long
   l(6)  = "Const I"
   l(7)  = "Const. Z"
   l(8)  = "Const. Z"
+  l(9)  = "Memo"
 
   c(1)  = LD_nActive
   c(2)  = LU_sID
@@ -1292,8 +1345,9 @@ Function InitParamCode_Load( l() As String, c() As long ) As long
   c(6)  = LU_vdMVAR
   c(7)  = LU_vdMW
   c(8)  = LU_vdMVAR
+  c(9)  = -999
   
-  InitParamCode_Load = 8
+  InitParamCode_Load = 9
 End Function
 Function checkHeader_Load( ByRef Array() As String, ByVal colCount )
   okBusName  = false
@@ -1318,12 +1372,13 @@ Function processRow_Load( ByRef FieldName() As String, ByRef FieldVal() As Strin
   For ii = 1 to cols
     If FieldName(ii) = "Bus Name" Then busHnd = findBusHnd(FieldVal(ii))
     If FieldName(ii) = "ID"   Then CktID   = FieldVal(ii)
-    If busHnd> -1 And CktID <> "999" Then  
-      loadHnd& = loadunitSearch( busHnd, CktID )  
+    If busHnd> -1 And CktID <> "999" Then 
+      loadHnd& = loadSearch( busHnd ) 
+      loadunitHnd& = loadunitSearch( busHnd, CktID )  
       exit For
     End If
   Next
-  If loadHnd = 0 Then 
+  If loadHnd = 0 Or loadunitHnd = 0 Then 
     printTTY("  Error: Object not found")
     exit Function
   End If
@@ -1336,7 +1391,12 @@ Function processRow_Load( ByRef FieldName() As String, ByRef FieldVal() As Strin
     If paramID = 0 Then 
       GoTo NextIteration
     End If
-    If paramID = LU_vdMW Then
+    If paramID = -999 Then
+      If 0 < SetFieldValue(sLabels,nCodes,nCountCodes,sFieldVal,loadHnd,paramID&,nIndex) Then
+        countUpdated = countUpdated + 1
+        If listUpdated <> "" Then listUpdated = listUpdated & "," & FieldName(ii) Else listUpdated = FieldName(ii)
+      End If 
+    ElseIf paramID = LU_vdMW Then
       select Case FieldName(ii)
         case "Const. P"
           nIndex = 1
@@ -1349,14 +1409,14 @@ Function processRow_Load( ByRef FieldName() As String, ByRef FieldVal() As Strin
       Real$ = c2ri(sFieldVal,1)
       Imag$ = c2ri(sFieldVal,2)
       
-      If 0 < SetFieldValue(sLabels,nCodes,nCountCodes,Real,loadHnd,paramID&,nIndex) Or _
-         0 < SetFieldValue(sLabels,nCodes,nCountCodes,Imag,loadHnd,paramIDX&,nIndex) Then
+      If 0 < SetFieldValue(sLabels,nCodes,nCountCodes,Real,loadunitHnd,paramID&,nIndex) Or _
+         0 < SetFieldValue(sLabels,nCodes,nCountCodes,Imag,loadunitHnd,paramIDX&,nIndex) Then
         countUpdated = countUpdated + 1
         If listUpdated <> "" Then listUpdated = listUpdated & "," & FieldName(ii) Else listUpdated = FieldName(ii)
       End If
 
     Else      
-      If 0 < SetFieldValue(sLabels,nCodes,nCountCodes,sFieldVal,loadHnd,paramID&,nIndex) Then
+      If 0 < SetFieldValue(sLabels,nCodes,nCountCodes,sFieldVal,loadunitHnd,paramID&,nIndex) Then
         countUpdated = countUpdated + 1
         If listUpdated <> "" Then listUpdated = listUpdated & "," & FieldName(ii) Else listUpdated = FieldName(ii)
       End If
@@ -1364,7 +1424,7 @@ Function processRow_Load( ByRef FieldName() As String, ByRef FieldVal() As Strin
     NextIteration
   Next
   If countUpdated > 0 Then
-    If PostData(loadHnd) = 0 Then
+    If PostData(loadHnd) = 0 Or PostData(loadunitHnd) = 0 Then
       PrintTTY("  Error: " + ErrorString() )
       exit Function
     End If
@@ -1385,6 +1445,7 @@ Function InitParamCode_Sh( l() As String, c() As long ) As long
   l(4)  = "B"
   l(5)  = "G0"
   l(6)  = "B0"
+  l(7)  = "Memo"
 
   c(1)  = SC_nActive
   c(2)  = SC_sID
@@ -1392,8 +1453,9 @@ Function InitParamCode_Sh( l() As String, c() As long ) As long
   c(4)  = SU_dB
   c(5)  = SU_dG0
   c(6)  = SU_dB0
+  c(7)  = -999
   
-  InitParamCode_Sh = 6
+  InitParamCode_Sh = 7
 End Function
 Function checkHeader_Sh( ByRef Array() As String, ByVal colCount )
   okBusName  = false
@@ -1437,7 +1499,14 @@ Function processRow_Sh( ByRef FieldName() As String, ByRef FieldVal() As String,
     paramID = LookupParamCode(sLabels,nCodes,nCountCodes,FieldName(ii),1)
     If paramID = 0 Or paramID = SC_nActive Or paramID = SC_sID Then 
       GoTo NextIteration
-    End If   
+    End If 
+    If paramID = -999 Then
+      If 0 < SetFieldValue(sLabels,nCodes,nCountCodes,sFieldVal,shHnd,paramID&,nIndex) Then
+        countUpdated = countUpdated + 1
+        If listUpdated <> "" Then listUpdated = listUpdated & "," & FieldName(ii) Else listUpdated = FieldName(ii)
+      End If 
+      GoTo NextIteration
+    End If  
     If 0 < SetFieldValue(sLabels,nCodes,nCountCodes,sFieldVal,shunitHnd,paramID&,nIndex) Then
       countUpdated = countUpdated + 1
       If listUpdated <> "" Then listUpdated = listUpdated & "," & FieldName(ii) Else listUpdated = FieldName(ii)
@@ -1445,7 +1514,7 @@ Function processRow_Sh( ByRef FieldName() As String, ByRef FieldVal() As String,
     NextIteration
   Next
   If countUpdated > 0 Then
-    If PostData(shunitHnd) = 0 Then
+    If PostData(shHnd) = 0 Or PostData(shunitHnd) = 0 Then
       PrintTTY("  Error: " + ErrorString() )
       exit Function
     End If
@@ -1461,25 +1530,25 @@ End Function
 Function InitParamCode_Bus( l() As String, c() As long ) As long
   l(1)  = "Bus Name"
   l(2)  = "Location"
-  l(3)  = "Memo"
-  l(4)  = "No."
-  l(5)  = "Area"
-  l(6)  = "Zone"
+  l(3)  = "No."
+  l(4)  = "Area"
+  l(5)  = "Zone"
   l(7)  = "Tap Bus"
-  l(8)  = "Sub. Gp."
-  l(9)  = "X"
-  l(10) = "Y"
+  l(7)  = "Sub. Gp."
+  l(8)  = "X"
+  l(9)  = "Y"
+  l(10) = "Memo"
 
   c(1)  = BUS_sName
   c(2)  = BUS_sLocation
-  c(3)  = BUS_sComment
-  c(4)  = BUS_nNumber
-  c(5)  = BUS_nArea
-  c(6)  = BUS_nZone
-  c(7)  = BUS_nTapBus
-  c(8)  = BUS_nSubGroup
-  c(9)  = BUS_dSPCx
-  c(10) = BUS_dSPCy
+  c(3)  = BUS_nNumber
+  c(4)  = BUS_nArea
+  c(5)  = BUS_nZone
+  c(6)  = BUS_nTapBus
+  c(7)  = BUS_nSubGroup
+  c(8)  = BUS_dSPCx
+  c(9)  = BUS_dSPCy
+  c(10) = -999
 
   InitParamCode_Bus = 10
 End Function
@@ -1543,3 +1612,97 @@ Function processRow_Bus( ByRef FieldName() As String, ByRef FieldVal() As String
     PrintTTY("  Error: Nothing to update" )
   End If
 End Function
+
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+'''''''''''''''''''''''''''''''Breaker''''''''''''''''''''''''''''''''
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+Function InitParamCode_Breaker( l() As String, c() As long ) As long
+  l(1)  = "Rating"
+  l(2)  = "Int. time"
+  l(3)  = "Operating kV"
+  l(4)  = "CPT1"
+  l(5)  = "CPT2"
+  l(6)  = "kV range Factor"
+  l(7)  = "Max Design kV"
+  l(8)  = "Rated Momentary Amps"
+  l(9) = "No Derate"
+  l(10) = "NACD"
+  l(11) = "Memo"
+
+  c(1)  = BK_dRating1
+  c(2)  = BK_dCycles
+  c(3)  = BK_dOperatingKV
+  c(4)  = BK_dCPT1
+  c(5)  = BK_dCPT2
+  c(6)  = BK_dK
+  c(7)  = BK_dRatedKV
+  c(8)  = BK_dRating2
+  c(9) = BK_nDontDerate
+  c(10) = BK_dNACD
+  c(11) = -999
+
+  InitParamCode_Breaker = 11
+End Function
+Function checkHeader_Breaker( ByRef Array() As String, ByVal colCount )
+  okBusName     = false
+  okBreakerName = false
+  checkHeader_Breaker = false
+  For ii = 1 to colCount
+    If Array(ii) = "Bus name"	Then okBusName  = true
+    If Array(ii) = "Breaker name"	Then okBreakerName = true
+    If okBusName And okBreakerName Then
+      checkHeader_Breaker = true
+      exit For
+    End If
+  Next
+End Function
+Function processRow_Breaker( ByRef FieldName() As String, ByRef FieldVal() As String, ByVal cols ) As long
+  processRow_Breaker = 0
+  ' Find object handle
+  busHnd& = -1
+  breakerHnd& = -1
+  breakerName$ = ""
+  sFieldVal = ""
+  For ii = 1 to cols
+    If FieldName(ii) = "Bus name"	Then busHnd = findBusHnd(FieldVal(ii))
+    If FieldName(ii) = "Breaker name"   Then breakerName = FieldVal(ii)
+    If busHnd> -1 And breakerName <> "" Then   
+      breakerHnd& = breakerSearch( busHnd, breakerName )
+      exit For
+    End If
+  Next
+  If breakerHnd = 0 Then 
+    printTTY("  Error: Object not found")
+    exit Function
+  End If
+  countUpdated = 0
+  listUpdated$ = ""
+  For ii = 1 to cols
+    nIndex = 0
+    sFieldVal$ = FieldVal(ii)
+    paramID = LookupParamCode(sLabels,nCodes,nCountCodes,FieldName(ii),1)
+    If paramID = 0 Then 
+      GoTo NextIteration
+    End If  
+    If paramID = Bk_dRating1 Or ParamID = Bk_dCycles Then
+      nPos1 = InStr(1,FieldVal(ii)," ")
+      sFieldVal$ = Trim(Left(FieldVal(ii),nPos1))
+    End If
+    If 0 < SetFieldValue(sLabels,nCodes,nCountCodes,sFieldVal,breakerHnd,paramID&,nIndex) Then
+      countUpdated = countUpdated + 1
+      If listUpdated <> "" Then listUpdated = listUpdated & "," & FieldName(ii) Else listUpdated = FieldName(ii)
+    End If
+    NextIteration
+  Next
+  If countUpdated > 0 Then
+    If PostData(breakerHnd) = 0 Then
+      PrintTTY("  Error: " + ErrorString() )
+      exit Function
+    End If
+    PrintTTY("  Updated: " & listUpdated )
+    processRow_Breaker = countUpdated
+  Else
+    PrintTTY("  Error: Nothing to update" )
+  End If
+End Function
+
