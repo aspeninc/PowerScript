@@ -2,7 +2,7 @@
 '
 ' DATAWKS.BAS
 '
-' Version 2.2
+' Version 2.3
 '
 ' Import network data from excel spreadsheet 
 '
@@ -414,6 +414,7 @@ End Function
 Function SetFieldValue( sLabels() As String, nCodes() As long, nCountCodes&, sFieldVal$, thisHnd&, paramID&, nIndex) As long
   nChanged$ = 0
   SetFieldValue = 0
+  paramType = 0
   Dim vdArray(5) As Double
   If ParamID = -999 Then
    sVal$ = sFieldVal
@@ -450,9 +451,13 @@ Function SetFieldValue( sLabels() As String, nCodes() As long, nCountCodes&, sFi
       end if
     case 3 ' Integer
       If UCase(sFieldVal) = "YES" Then 
-        nVal& = 1 
+        nVal& = 1
       ElseIf UCase(sFieldVal) = "NO" Then
-        nVal& = 2 
+        If paramID = BK_nDontDerate Then
+          nVal& = 0
+        Else
+          nVal& = 2
+        End If 
       ElseIf UCase(sFieldVal) = "PV" Then
         nVal& = 0
       Elseif UCase(sFieldVal) = "PQ" Then
@@ -767,56 +772,64 @@ End Function
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 Function InitParamCode_Xfmr( l() As String, c() As long ) As long
   l(1)  = "In Serv"
-  l(2)  = "Tap1 V(pu)"
-  l(3)  = "Tap2 V(pu)"  
-  l(4)  = "R"
-  l(5)  = "X"
-  l(6)  = "B"
-  l(7)  = "R0"
-  l(8)  = "X0"  
-  l(9)  = "B0"
-  l(10) = "G1" 
-  l(11) = "B1"
-  l(12) = "G10"
-  l(13) = "B10"
-  l(14) = "G2"
-  l(15) = "B2"
-  l(16) = "G20"
-  l(17) = "B20"
-  l(18) = "ZG1"
-  l(19) = "ZG1"
-  l(20) = "ZG2"
-  l(21) = "ZG2"
-  l(22) = "ZGN"
-  l(23) = "ZGN"
-  l(24) = "Memo"
+  l(2)  = "Name"
+  l(3)  = "Tap1 V(pu)"
+  l(4)  = "Tap2 V(pu)" 
+  l(5)  = "MVA1"
+  l(6)  = "MVA2"
+  l(7)  = "MVA3" 
+  l(8)  = "R"
+  l(9)  = "X"
+  l(10) = "B"
+  l(11) = "R0"
+  l(12) = "X0"  
+  l(13) = "B0"
+  l(14) = "G1" 
+  l(15) = "B1"
+  l(16) = "G10"
+  l(17) = "B10"
+  l(18) = "G2"
+  l(19) = "B2"
+  l(20) = "G20"
+  l(21) = "B20"
+  l(22) = "ZG1"
+  l(23) = "ZG1"
+  l(24) = "ZG2"
+  l(25) = "ZG2"
+  l(26) = "ZGN"
+  l(27) = "ZGN"
+  l(28) = "Memo"
 
   c(1)  = XR_nInService
-  c(2)  = XR_dTap1
-  c(3)  = XR_dTap2  
-  c(4)  = XR_dR
-  c(5)  = XR_dX
-  c(6)  = XR_dB
-  c(7)  = XR_dR0
-  c(8)  = XR_dX0  
-  c(9)  = XR_dB0
-  c(10) = XR_dG1  
-  c(11) = XR_dB1
-  c(12) = XR_dG10
-  c(13) = XR_dB10
-  c(14) = XR_dG2
-  c(15) = XR_dB2
-  c(16) = XR_dG20  
-  c(17) = XR_dB20
-  c(18) = XR_dRG1
-  c(19) = XR_dXG1
-  c(20) = XR_dRG2
-  c(21) = XR_dXG2
-  c(22) = XR_dRGN
-  c(23) = XR_dXGN
-  c(24) = -999
+  c(2)  = XR_sName
+  c(3)  = XR_dTap1
+  c(4)  = XR_dTap2
+  c(5)  = XR_dMVA1
+  c(6)  = XR_dMVA2
+  c(7)  = XR_dMVA3  
+  c(8)  = XR_dR
+  c(9)  = XR_dX
+  c(10) = XR_dB
+  c(11) = XR_dR0
+  c(12) = XR_dX0  
+  c(13) = XR_dB0
+  c(14) = XR_dG1  
+  c(15) = XR_dB1
+  c(16) = XR_dG10
+  c(17) = XR_dB10
+  c(18) = XR_dG2
+  c(19) = XR_dB2
+  c(20) = XR_dG20  
+  c(21) = XR_dB20
+  c(22) = XR_dRG1
+  c(23) = XR_dXG1
+  c(24) = XR_dRG2
+  c(25) = XR_dXG2
+  c(26) = XR_dRGN
+  c(27) = XR_dXGN
+  c(28) = -999
 
-  InitParamCode_Xfmr = 24
+  InitParamCode_Xfmr = 28
 End Function
 Function checkHeader_Xfmr( ByRef Array() As String, ByVal colCount )
   okBus1  = false
@@ -904,68 +917,70 @@ End Function
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 Function InitParamCode_Xfmr3( l() As String, c() As long ) As long
   l(1)  = "In Serv"
-  l(2)  = "Base MVA"
-  l(3)  = "MVA A"
-  l(4)  = "MVA B"
-  l(5)  = "MVA C"
-  l(6)  = "Tap1 V(pu)"
-  l(7)  = "Tap2 V(pu)"
-  l(8)  = "Tap3 V(pu)"
-  l(9)  = "Zps"
+  l(2)  = "Name"
+  l(3)  = "Base MVA"
+  l(4)  = "MVA A"
+  l(5)  = "MVA B"
+  l(6)  = "MVA C"
+  l(7)  = "Tap1 V(pu)"
+  l(8)  = "Tap2 V(pu)"
+  l(9)  = "Tap3 V(pu)"
   l(10) = "Zps"
-  l(11) = "Zpt"
+  l(11) = "Zps"
   l(12) = "Zpt"
-  l(13) = "Zst"
+  l(13) = "Zpt"
   l(14) = "Zst"
-  l(15) = "Zps0"
+  l(15) = "Zst"
   l(16) = "Zps0"
-  l(17) = "Zpt0"
+  l(17) = "Zps0"
   l(18) = "Zpt0"
-  l(19) = "Zst0"  
-  l(20) = "Zst0" 
-  l(21) = "Zg1"
+  l(19) = "Zpt0"
+  l(20) = "Zst0"  
+  l(21) = "Zst0" 
   l(22) = "Zg1"
-  l(23) = "Zg2"
+  l(23) = "Zg1"
   l(24) = "Zg2"
-  l(25) = "Zg3"
+  l(25) = "Zg2"
   l(26) = "Zg3"
-  l(27) = "Zgn"
+  l(27) = "Zg3"
   l(28) = "Zgn"
-  l(29) = "B"
-  l(30) = "B0"
-  l(31) = "Memo"
+  l(29) = "Zgn"
+  l(30) = "B"
+  l(31) = "B0"
+  l(32) = "Memo"
 
   c(1)  = X3_nInService
-  c(2)  = X3_dBaseMVA
-  c(3)  = X3_dMVA1
-  c(4)  = X3_dMVA2
-  c(5)  = X3_dMVA3
-  c(6)  = X3_dTap1
-  c(7)  = X3_dTap2
-  c(8)  = X3_dTap3
-  c(9)  = X3_dRps
-  c(10) = X3_dXps
-  c(11) = X3_dRpt
-  c(12) = X3_dXpt
-  c(13) = X3_dRst
-  c(14) = X3_dXst  
-  c(15) = X3_dR0ps
-  c(16) = X3_dX0ps
-  c(17) = X3_dR0pt
-  c(18) = X3_dX0pt
-  c(19) = X3_dR0st
-  c(20) = X3_dX0st
-  c(21) = X3_dRG1
-  c(22) = X3_dXG1
-  c(23) = X3_dRG2
-  c(24) = X3_dXG2
-  c(25) = X3_dRG3
-  c(26) = X3_dXG3
-  c(27) = X3_dRGN
-  c(28) = X3_dXGN
-  c(29) = X3_dB
-  c(30) = X3_dB0
-  c(31) = -999
+  c(2)  = X3_sName
+  c(3)  = X3_dBaseMVA
+  c(4)  = X3_dMVA1
+  c(5)  = X3_dMVA2
+  c(6)  = X3_dMVA3
+  c(7)  = X3_dTap1
+  c(8)  = X3_dTap2
+  c(9)  = X3_dTap3
+  c(10) = X3_dRps
+  c(11) = X3_dXps
+  c(12) = X3_dRpt
+  c(13) = X3_dXpt
+  c(14) = X3_dRst
+  c(15) = X3_dXst  
+  c(16) = X3_dR0ps
+  c(17) = X3_dX0ps
+  c(18) = X3_dR0pt
+  c(19) = X3_dX0pt
+  c(20) = X3_dR0st
+  c(21) = X3_dX0st
+  c(22) = X3_dRG1
+  c(23) = X3_dXG1
+  c(24) = X3_dRG2
+  c(25) = X3_dXG2
+  c(26) = X3_dRG3
+  c(27) = X3_dXG3
+  c(28) = X3_dRGN
+  c(29) = X3_dXGN
+  c(30) = X3_dB
+  c(31) = X3_dB0
+  c(32) = -999
 
 '  c(27) = X3_dLTCCenterTap
 '  c(28) = X3_dLTCstep
@@ -975,7 +990,7 @@ Function InitParamCode_Xfmr3( l() As String, c() As long ) As long
 '  c(32) = X3_nLTCGanged
   
 
-  InitParamCode_Xfmr3 = 31
+  InitParamCode_Xfmr3 = 32
 End Function
 Function checkHeader_Xfmr3( ByRef Array() As String, ByVal colCount )
   okBus1  = false
@@ -1617,31 +1632,35 @@ End Function
 '''''''''''''''''''''''''''''''Breaker''''''''''''''''''''''''''''''''
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 Function InitParamCode_Breaker( l() As String, c() As long ) As long
-  l(1)  = "Rating"
-  l(2)  = "Int. time"
-  l(3)  = "Operating kV"
-  l(4)  = "CPT1"
-  l(5)  = "CPT2"
-  l(6)  = "kV range Factor"
-  l(7)  = "Max Design kV"
-  l(8)  = "Rated Momentary Amps"
-  l(9) = "No Derate"
-  l(10) = "NACD"
-  l(11) = "Memo"
+  l(1)  = "In Serv"
+  l(2)  = "Breaker name"
+  l(3)  = "Rating"
+  l(4)  = "Int. time"
+  l(5)  = "Operating kV"
+  l(6)  = "CPT1"
+  l(7)  = "CPT2"
+  l(8)  = "kV range Factor"
+  l(9)  = "Max Design kV"
+  l(10) = "Rated Momentary Amps"
+  l(11) = "No Derate"
+  l(12) = "NACD"
+  l(13) = "Memo"
 
-  c(1)  = BK_dRating1
-  c(2)  = BK_dCycles
-  c(3)  = BK_dOperatingKV
-  c(4)  = BK_dCPT1
-  c(5)  = BK_dCPT2
-  c(6)  = BK_dK
-  c(7)  = BK_dRatedKV
-  c(8)  = BK_dRating2
-  c(9) = BK_nDontDerate
-  c(10) = BK_dNACD
-  c(11) = -999
+  c(1)  = BK_nInService
+  c(2)  = BK_sID
+  c(3)  = BK_dRating1
+  c(4)  = BK_dCycles
+  c(5)  = BK_dOperatingKV
+  c(6)  = BK_dCPT1
+  c(7)  = BK_dCPT2
+  c(8)  = BK_dK
+  c(9)  = BK_dRatedKV
+  c(10) = BK_dRating2
+  c(11) = BK_nDontDerate
+  c(12) = BK_dNACD
+  c(13) = -999
 
-  InitParamCode_Breaker = 11
+  InitParamCode_Breaker = 13
 End Function
 Function checkHeader_Breaker( ByRef Array() As String, ByVal colCount )
   okBusName     = false
