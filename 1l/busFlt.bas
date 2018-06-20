@@ -11,6 +11,9 @@
 '  - Fault current
 '  - Max fault current and location
 '
+' Version 1.0
+' Category: OneLiner
+'
 ' PowerScript functions called:
 '   GetEquipment()
 '   NextBusByName()

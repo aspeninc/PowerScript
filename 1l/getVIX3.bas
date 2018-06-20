@@ -6,6 +6,9 @@
 ' Demonstrate how PowerScript program can access Shortcircuit
 ' simulation result
 '
+' Version 1.0
+' Category: OneLiner
+'
 ' PowerScript functions called:
 '   GetEquipment()
 '   FullBusName()

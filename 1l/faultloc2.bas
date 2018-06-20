@@ -7,6 +7,9 @@
 ' the selected line(s). The simulation result is then  compared to recorded 
 ' quantied values. One or several matches will be reported.
 ' 
+' Version 3.0
+' Category: OneLiner
+'
 ' PowerScript functions called:
 '   DoFault()
 '   PickFault()

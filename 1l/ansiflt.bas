@@ -4,6 +4,9 @@
 '
 ' Simulate fault with R only and X only network to compute ANSI X/R ratio
 '
+' Version: 1.0
+' Category: OneLiner
+'
 ' PowerScript functions called:
 '   GetData()
 '   SetData()

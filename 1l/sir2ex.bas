@@ -4,6 +4,8 @@
 '
 ' Compute source to line impedance ratio of selected buses and generate report
 '
+' Version: 1.0
+' Category: OneLiner
 '
 '
 Sub main()

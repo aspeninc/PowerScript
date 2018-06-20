@@ -4,6 +4,8 @@
 '
 ' Simulate 32I directional logic
 '
+' Version 1.0
+' Category: OneLiner
 '
 Sub main()
  Dim MagArray(12) As Double
@@ -16,7 +18,12 @@ Sub main()
  UseTertiary = 1  '0 or 1
  
   ' Get picked object number
- If GetEquipment( TC_PICKED, ObjHnd ) = 0 Or EquipmentType( ObjHnd ) <> TC_RLYGROUP Then 
+ If GetEquipment( TC_PICKED, ObjHnd ) = 0 Then 
+   Print "Please select a relay group"
+   Exit Sub
+ End If
+ 
+ If EquipmentType( ObjHnd ) <> TC_RLYGROUP Then
    Print "Please select a relay group"
    Exit Sub
  End If

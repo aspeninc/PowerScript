@@ -4,6 +4,9 @@
 '
 ' Demonstrate the DoArcFlash Command
 '
+' Version: 1.0
+' Category: OneLiner
+'
 ' PowerScript functions used
 Sub main()
 
@@ -22,9 +25,10 @@ Sub main()
   vdOption(3) = 0	'0-No enclosure;1-Enclosed
   vdOption(4) = 153	'Conductor gap in mm
   vdOption(5) = 36	'Working distance in inches
-  vdOption(6) = -1	'Fault clearing:-1- Auto;-2- manual clearing Time;>0- clearing device handle
+  vdOption(6) = -3	'Fault clearing:-1- Auto;-2- manual clearing Time;>0- clearing device handle
   vdOption(7) = 1.5	'Breaker interrupting time in cycles or manual clearing time in seconds
   vdOption(8) = 1	'Ignore 2 second flag: 0-reset; 1-set;
+  vdOption(9) = 1	'Number of tiers
   
   
   If 0 = DoAcrFlash( nBusHnd, vdOption, vdResult ) Then GoTo HasError

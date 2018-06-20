@@ -2,11 +2,13 @@
 ' ATCXLS.BAS
 '
 ' Determine max transfer capability of a tie line
-'
 ' Demonstrate how to:
 '   Update network data 
 '   Perform PF
 '   Control other window program via Automation
+'
+' Version 1.0
+' Category: Power Flow
 '
 ' PowerScript functions called:
 '   FindBusByName()

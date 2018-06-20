@@ -6,6 +6,9 @@
 ' Read list of lines from an input CSV file
 ' Report fault currents in CSV file.
 '
+' Version 1.0
+' Category: OneLiner
+'
 ' Details input file format is in LineFault_Profile.pdf 
 '
 '******************************************************************************************************

@@ -3,7 +3,8 @@
 '
 ' Make change to breaker data using Change file
 '
-' V 1.0
+' Version 1.0
+' Category: OneLiner
 '
 ' Usage:
 ' 1- Run OneLiner File | Export | Breaker data to save breaker data in  CHF file

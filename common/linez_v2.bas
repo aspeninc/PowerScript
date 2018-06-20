@@ -5,13 +5,13 @@
 ' Report total line impedance and length.
 ' Lines with tap buses are handled correctly
 '
-' Version 2.0
+' Version: 2.0
 '
 '========================== 
 ' Change these constants as as needed
-Const KVMin = 114        
-Const KVMax = 116
-Const maxLines  = 2000
+Const KVMin = 0        
+Const KVMax = 999
+Const maxLines  = 10000
 '
 '==========================
 ' Do not change this constant
@@ -19,20 +19,23 @@ Const hndOffset = 3
 '==========================
 
 ' Global var declaration
-dim ProcessedHnd(maxLines+1) As long
+dim ProcessedHnd(maxLines) As long
 dim BusHndList(100) As long, BusListCount As long
 
 Sub main()
    LineCount  = 0
    PickedHnd& = 0
-   
-   For ii = 1 to maxLines
-     ProcessedHnd(ii) = 0
-   next
+   While GetEquipment( TC_LINE, PickedHnd& ) > 0
+     Index = PickedHnd&-hndOffset
+     If Index >= maxLines Then
+       Print "Too many lines in this network. Edit script code to increase maxLines and try again."
+       Stop
+     End If
+     ProcessedHnd(Index) = 0
+   Wend
    
    If GetEquipment( TC_PICKED, PickedHnd& ) > 0 And _
       EquipmentType( PickedHnd& ) = TC_LINE Then
-      call lookUpLine(PickedHnd,1) 
       Call compuOneLine( PickedHnd& )
       ' Do it for only selected line
       LineCount  = 1
@@ -43,21 +46,16 @@ Sub main()
       PickedHnd& = 0
       LineCount  = 0
       While GetEquipment( TC_LINE, PickedHnd& ) > 0
-        Call GetData( PickedHnd, LN_nBus1Hnd, Bus1Hnd& )
-        Call getdata( Bus1Hnd, BUS_dKVNominal,dKV# )
-        If dKV >= KVMin And dKV <= KVmax Then
-          If lookUpLine(PickedHnd&, 1) = 0 Then
-            ' We Want to start from a segment with real bus and relay group
+        If ProcessedHnd(PickedHnd&-hndOffset) = 0 Then
+          Call GetData( PickedLineHnd, LN_nBus1Hnd, Bus1Hnd& )
+          Call getdata( Bus1Hnd, BUS_dKVNominal,dKV# )
+          If dKV >= KVMin And dKV <= KVmax Then
             Call GetData( Bus1Hnd, BUS_nTapBus, TapCode1& )
             Call GetData( PickedLineHnd, LN_nBus2Hnd, Bus2Hnd& )
             Call GetData( Bus2Hnd, BUS_nTapBus, TapCode2& )
             If TapCode1 = 0 Or TapCode2 = 0 Then
-              Call GetData( PickedLineHnd, LN_nRlyGr1Hnd, RlyGroup1Hnd& )
-              Call GetData( PickedLineHnd, LN_nRlyGr2Hnd, RlyGroup2Hnd& )
-              If RlyGroup1Hnd <> 0 Or RlyGroup2Hnd <> 0 Then
-                Call compuOneLine( PickedHnd& )       
-                LineCount = LineCount + 1
-              End If
+              Call compuOneLine( PickedHnd& )       ' Want to start from a real bus
+              LineCount = LineCount + 1
             End If
           End If
         End If 
@@ -67,26 +65,6 @@ Sub main()
    Print LineCount, " lines processed. See result in TTY window"
      
 End Sub  
-
-Function lookUpLine( byval nHnd&, byval nAdd& ) As long
-   lookUpLine = -1
-   For ii = 1 to maxLines
-     If ProcessedHnd(ii) = nHnd Then 
-       lookUpLine = 1
-       GoTo EndF
-     End If
-     If ProcessedHnd(ii) = 0 Then 
-       lookUpLine = 0
-       If nAdd = 1 Then ProcessedHnd(ii) = nHnd
-       GoTo EndF
-     End If
-   next
-   If ii > maxLines Then
-     Print "Constant maxLines is set too low for this network."
-     Stop
-   End If
-EndF:
-End Function
    
 Function compuOneLine( ByVal nLineHnd& )   
    
@@ -114,73 +92,74 @@ Function compuOneLine( ByVal nLineHnd& )
                       "L=" & Format(dLength#,"0.0")
    PrintTTY(" ")
 '   PrintTTY(aLine$)
+   ProcessedHnd(nLineHnd-hndOffset) = 1
    
    ' find tap segments on Bus1 side
    BusHnd&  = Bus1Hnd
    Do 
      LineHnd = FindTapSegmentAtBus(BusHnd&, sName)
      If LineHnd = 0 Then exit Do
-     If 0 = lookUpLine(LineHnd, 1) Then
-       Call GetData( LineHnd, LN_dR, dRn# )
-       Call GetData( LineHnd, LN_dX, dXn# )
-       Call GetData( LineHnd, LN_dR0, dR0n# )
-       Call GetData( LineHnd, LN_dX0, dX0n# )
-       Call GetData( LineHnd, LN_dLength, dL# )
-       Call GetData( LineHnd, LN_nBus2Hnd, BusFarHnd )  ' Get the far end bus
-       If BusFarHnd = BusHnd Then _
-         Call GetData( LineHnd, LN_nBus1Hnd, BusFarHnd )  ' Get the far end bus
-       dLength = dLength + dL
-       dR  = dR  + dRn
-       dX  = dX  + dXn
-       dR0 = dR0 + dR0n
-       dX0 = dX0 + dX0n
-       aLine$ = FullBusName(BusHnd) + " - " + FullBusName(BusFarHnd) + ": " + _
+     ProcessedHnd(LineHnd-hndOffset) = 1
+     Call GetData( LineHnd, LN_dR, dRn# )
+     Call GetData( LineHnd, LN_dX, dXn# )
+     Call GetData( LineHnd, LN_dR0, dR0n# )
+     Call GetData( LineHnd, LN_dX0, dX0n# )
+     Call GetData( LineHnd, LN_dLength, dL# )
+     Call GetData( LineHnd, LN_nBus2Hnd, BusFarHnd )  ' Get the far end bus
+     If BusFarHnd = BusHnd Then _
+       Call GetData( LineHnd, LN_nBus1Hnd, BusFarHnd )  ' Get the far end bus
+     dLength = dLength + dL
+     dR  = dR  + dRn
+     dX  = dX  + dXn
+     dR0 = dR0 + dR0n
+     dX0 = dX0 + dX0n
+     aLine$ = FullBusName(BusHnd) + " - " + FullBusName(BusFarHnd) + ": " + _
                       "Z=" + printImpedance(dRn#,dXn#,dKV#) + " " + _
                       "Zo=" + printImpedance(dR0n#,dX0n#,dKV#) + " " + _
                       "L=" + Format(dL#,"0.0")
-       PrintTTY("Sg: " & aLine$)
-       BusHndList(BusListCount) = BusHnd
-       BusListCount = BusListCount+1
-       BusHnd  = BusFarHnd
-       BusHndList(BusListCount) = BusFarHnd
-       BusListCount = BusListCount+1
-     End If
+     PrintTTY("Segment: " & aLine$)
+     ProcessedHnd(LineHnd-hndOffset) = 1
+     BusHndList(BusListCount) = BusHnd
+     BusListCount = BusListCount+1
+     BusHnd  = BusFarHnd
+     BusHndList(BusListCount) = BusFarHnd
+     BusListCount = BusListCount+1
    Loop
 
-   ' find tap segments on Bus2 side
+   ' find tap segments on Bus1 side
    BusHnd&  = Bus2Hnd
    Do 
      LineHnd = FindTapSegmentAtBus(BusHnd&, sName)
      If LineHnd = 0 Then exit Do
-     If 0 = lookUpLine(LineHnd, 1) Then
-       Call GetData( LineHnd, LN_dR, dRn# )
-       Call GetData( LineHnd, LN_dX, dXn# )
-       Call GetData( LineHnd, LN_dR0, dR0n# )
-       Call GetData( LineHnd, LN_dX0, dX0n# )
-       Call GetData( LineHnd, LN_dLength, dL# )
-       Call GetData( LineHnd, LN_nBus2Hnd, BusFarHnd )  ' Get the far end bus
-       If BusFarHnd = BusHnd Then _
-         Call GetData( LineHnd, LN_nBus1Hnd, BusFarHnd )  ' Get the far end bus
-       dLength = dLength + dL
-       dR  = dR + dRn
-       dX  = dX + dXn
-       dR0 = dR0 + dR0n
-       dX0 = dX0 + dX0n
-       aLine$ = FullBusName(BusHnd) + " - " + FullBusName(BusFarHnd) + ": " + _
+     ProcessedHnd(LineHnd-hndOffset) = 1
+     Call GetData( LineHnd, LN_dR, dRn# )
+     Call GetData( LineHnd, LN_dX, dXn# )
+     Call GetData( LineHnd, LN_dR0, dR0n# )
+     Call GetData( LineHnd, LN_dX0, dX0n# )
+     Call GetData( LineHnd, LN_dLength, dL# )
+     Call GetData( LineHnd, LN_nBus2Hnd, BusFarHnd )  ' Get the far end bus
+     If BusFarHnd = BusHnd Then _
+       Call GetData( LineHnd, LN_nBus1Hnd, BusFarHnd )  ' Get the far end bus
+     dLength = dLength + dL
+     dR  = dR + dRn
+     dX  = dX + dXn
+     dR0 = dR0 + dR0n
+     dX0 = dX0 + dX0n
+     aLine$ = FullBusName(BusHnd) + " - " + FullBusName(BusFarHnd) + ": " + _
                       "Z=" + printImpedance(dRn#,dXn#,dKV#) + " " + _
-                      "Zo=" + printImpedance(dR0n#,dX0n#,dKV#) + " " + _
+                      "Zo=" + Format(dR0n#,dX0n#,dKV#) + " " + _
                       "L=" + Format(dL#,"0.0")
-       PrintTTY("Sg: " & aLine$)
-       BusHndList(BusListCount) = BusHnd
-       BusListCount = BusListCount+1
-       BusHnd  = BusFarHnd
-       BusHndList(BusListCount) = BusFarHnd
-       BusListCount = BusListCount+1
-     End If
+     PrintTTY("Segment: " & aLine$)
+     ProcessedHnd(LineHnd-hndOffset) = 1
+     BusHndList(BusListCount) = BusHnd
+     BusListCount = BusListCount+1
+     BusHnd  = BusFarHnd
+     BusHndList(BusListCount) = BusFarHnd
+     BusListCount = BusListCount+1
    Loop
 
    If BusListCount > 2 Then
-     PrintTTY("Sg: " & aLine1$)
+     PrintTTY("Segment: " & aLine1$)
      ' Find the two real end buses by sorting the bus list and keep
      ' only entries that do not repeat
      Do 
@@ -214,7 +193,7 @@ Function compuOneLine( ByVal nLineHnd& )
                       "Zo=" + printImpedance(dR0,dX0,dKV) + " " + _
                       "L=" + Format(dLength,"0.0")
    End If
-   PrintTTY("Ln: " & aLine1$)
+   PrintTTY("Line: " & aLine1$)
 End Function
 
 Function FindTapSegmentAtBus( BusHnd&, sName$ ) As long
@@ -226,9 +205,9 @@ Function FindTapSegmentAtBus( BusHnd&, sName$ ) As long
     Call GetData( BranchHnd&, BR_nType, TypeCode )
     If TypeCode <> TC_LINE Then GoTo ContinueWhile
     Call GetData( BranchHnd&, BR_nHandle, LineHnd& )
-    If lookUpLine(LineHnd, 0) = 1 Then GoTo continueWhile
+    If ProcessedHnd(LineHnd-hndOffset) = 1 Then GoTo continueWhile
     Call GetData( LineHnd, LN_sName, sNameThis$ )
-    If sName <> "" And sNameThis = sName Then 
+    If sNameThis = sName Then 
       FindTapSegmentAtBus = LineHnd
       exit Do
     End If
@@ -242,10 +221,11 @@ End Function
 
 Function printImpedance( dR#, dX#, dKV# ) As String
  dMag = Sqr( dR#^2 + dX#^2 )*dKV#^2/100
- If dR# <> 0 Then _
-  dAng = Atn(dX#/dR#)*180/3.14156 _
- Else _
-  dAng = 90
- printImpedance = Format(dR#,"0.0000") & "+j" & Format(dX#,"0.0000") _
+ If dR# <> 0.0 Then 
+   dAng = Atn(dX#/dR#)*180/3.14156 
+ Else 
+   if dX# > 0 then dAng = 90 else dAng = -90
+ End If
+ printImpedance = Format(dR#,"0.00000") & "+j" & Format(dX#,"0.00000") & "pu" _
           & "(" & Format(dMag,"0.00") & "@" & Format(dAng,"0.00") & "Ohm)"
 End Function

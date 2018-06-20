@@ -4,12 +4,16 @@
 '
 ' Simulate faults on the selected bus with N-1 contingency analysis (branch outage)
 '
+' Version 1.0
+' Category: OneLiner
+'
+
 
 Sub main()
   Dim vnBusHnd1(1000) As Long
   Dim vnBusHnd2(1000) As Long     'The maximum number of selected fault buses is set to 1000  
   Dim vnFltConn(4) As Long
-  Dim vdFltOpt(14) As Double
+  Dim vdFltOpt(15) As Double
   Dim vnOutageOpt(4) As Long 
   Dim vnOutageList(2000) As Long  'The maximum number of line outages is set to 2000
   
@@ -116,6 +120,7 @@ Sub main()
   vdFltOpt(12) = 0	' Intermediate % with end opened w/ outage
   vdFltOpt(13) = 0	' Auto seq. Intermediate % from
   vdFltOpt(14) = 0	' Auto seq. Intermediate % to
+  vdFltOpt(15) = 999999	' Solidly grounded at both ends
 
   ' Branch outage option flags
   vnOutageOpt(1) = 1	' One at a time

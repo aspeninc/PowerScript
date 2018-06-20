@@ -4,6 +4,9 @@
 '
 ' Run DoFault() with breaker failure simulation option
 '
+' Version 1.0
+' Category: OneLiner
+'
 ' PowerScript functions called:
 '
 '
@@ -16,7 +19,12 @@ Sub main()
    dim LineZList(50) As double
    Dim OutageType(4) As Long
 
-  If GetEquipment( TC_PICKED, DevHandle& ) = 0 Or EquipmentType( DevHandle& ) <> TC_RLYGROUP Then
+  If GetEquipment( TC_PICKED, DevHandle& ) = 0 Then
+    Print "Please select a relay group"
+    Exit Sub
+  End If
+  
+  If EquipmentType( DevHandle& ) <> TC_RLYGROUP Then
     Print "Please select a relay group"
     Exit Sub
   End If

@@ -6,6 +6,9 @@
 '
 ' Demonstrate how to simulate fault from a PowerScript program
 '
+' Version 1.0
+' Category: OneLiner
+'
 ' PowerScript functions called:
 '   GetEquipment()
 '   FullBusName()

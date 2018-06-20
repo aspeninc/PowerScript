@@ -2,6 +2,9 @@
 '
 ' Determine sensitivity of generator outage on bus fault current
 '
+' Version 1.0
+' Category: OneLiner
+'
 ' List of generator units are stored in GenFile in comma delimited format:
 ' AAAAA xxxKV, N
 ' Where: AAAA- Bus name; xxxx- nominal kV; N- Unit ID

@@ -3,6 +3,10 @@
 ' SIR1.BAS
 '
 ' Compute source to line impedance ratio with voltage
+'
+' Version 1.0
+' Category: OneLiner
+'
 
 Sub main()
    ' Variable declaration

@@ -4,6 +4,8 @@
 '
 ' Compute total loses.
 ' 
+' Version 1.0
+' Category: Power Flow
 '
 Const IDOK = -1
 Const MxLines = 1000

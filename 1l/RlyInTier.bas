@@ -4,6 +4,9 @@
 '
 ' Find list of relay group vicinity of
 '
+' Version 1.0
+' Category: OneLiner
+'
 
 Sub main
   If 0 = GetEquipment( TC_PICKED, PickedHnd ) Or _

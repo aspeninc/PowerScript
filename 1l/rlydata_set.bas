@@ -4,6 +4,8 @@
 '
 ' Retrieve data of relays in the selected group
 '
+' Version 1.0
+' Category: OneLiner
 '
 ' PowerScript functions called:
 '   GetEquipment()
@@ -46,6 +48,10 @@ Sub main()
          ParamID7& = OG_dTimeAdd
          ParamID8& = OG_dTimeMult
          ParamID9& = OG_dTimeReset
+         ParamID10& = OG_nSignalOnly
+         Call SetData( RelayHnd, OP_sID, "NewOG" )
+         Call SetData( RelayHnd, OP_nSignalOnly, 2 )
+         Call PostData( RelayHnd )
        Case TC_RLYOCP
          ParamID1& = OP_sID
          ParamID2& = OP_dTap
@@ -56,7 +62,9 @@ Sub main()
          ParamID7& = OP_dTimeAdd
          ParamID8& = OP_dTimeMult
          ParamID9& = OP_dTimeReset
+         ParamID10& = OP_nSignalOnly
          Call SetData( RelayHnd, OP_sID, "NewOP" )
+         Call SetData( RelayHnd, OP_nSignalOnly, 1 )
          Call PostData( RelayHnd )
        Case TC_RLYDSP
          ParamID1& = DP_sID
@@ -64,16 +72,18 @@ Sub main()
          ParamID5& = DP_sDSType
          ParamID6& = DP_vdParams
          ParamID7& = DP_nParamCount
-         Call SetData( RelayHnd, DP_sID, "NewDS" )
-         If PostData( RelayHnd ) = 0 Then Print ErrorString()
+         ParamID8& = DP_nSignalOnly
+ '        Call SetData( RelayHnd, DP_sID, "NewDS" )
+ '        If PostData( RelayHnd ) = 0 Then Print ErrorString()
        Case TC_RLYDSG
          ParamID1& = DG_sID
          ParamID4& = DG_sType
          ParamID5& = DG_sDSType
          ParamID6& = DG_vdParams
          ParamID7& = DG_nParamCount
-         Call SetData( RelayHnd, DG_sID, "NewDS" )
-         If PostData( RelayHnd ) = 0 Then Print ErrorString()
+         ParamID8& = DG_nSignalOnly
+'         Call SetData( RelayHnd, DG_sID, "NewDS" )
+'         If PostData( RelayHnd ) = 0 Then Print ErrorString()
        Case Else
          GoTo Cont
      End Select
@@ -87,19 +97,23 @@ Sub main()
        Call GetData( RelayHnd, ParamID7, dTimeAdd# )
        Call GetData( RelayHnd, ParamID8, dTimeMult# )
        Call GetData( RelayHnd, ParamID9, dTimeReset# )
+       Call GetData( RelayHnd, ParamID10, nSignalOnly& )
        Print "OC Relay " & sID & "(" & sType & ")" & ": Tap=" & Format( dTap, "#0.#0" ) & "; TD="; Format( dTD, "#0,#0" ) & _
               "; Inst=" & Format( dInst, "#0" ) & "; InstDelay=" & Format( dInstDelay, "#0.0" ) & _
-              "; Tmult=" & Format( dTimeMult, "#0.0" ) & "; Tadd=" & Format( dTimeAdd, "#0.0" ) & "; Treset=" & Format( dTimeReset, "#0.0" )
+              "; Tmult=" & Format( dTimeMult, "#0.0" ) & "; Tadd=" & Format( dTimeAdd, "#0.0" ) & "; Treset=" & Format( dTimeReset, "#0.0" ) & _
+              "; nSignalOnly=" & Str(nSignalOnly)
      Else
        Call GetData( RelayHnd, ParamID1, sID$ )
        Call GetData( RelayHnd, ParamID4, sType$ )
        Call GetData( RelayHnd, ParamID5, sDSType$ )
+       Call GetData( RelayHnd, ParamID8, nSignalOnly& )
        Call GetData( RelayHnd, ParamID7, nCount& )
        If 0 = GetData( RelayHnd, ParamID6, vDSParams ) Then GoTo hasError
-       sPrint$ = "DS Relay " & sID & "(" & sType & ")" & "(" & sDSType & ")" & Chr(13)
-       For ii=1 To nCount
-         sPrint$ = sPrint$ + " Param[" + Str(ii) + "]=" + Str(vDSParams(ii)) + Chr(13)
-       Next ii
+       sPrint$ = "DS Relay " & sID & "(" & sType & ")" & "(" & sDSType & ")" & _
+                  "; nSignalOnly=" & Str(nSignalOnly) &Chr(13)
+'       For ii=1 To nCount
+'         sPrint$ = sPrint$ + " Param[" + Str(ii) + "]=" + Str(vDSParams(ii)) + Chr(13)
+'       Next ii
        Print sPrint
      End If
    Cont:

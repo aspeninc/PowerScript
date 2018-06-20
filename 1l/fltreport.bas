@@ -3,29 +3,39 @@
 ' FLTREPORT.BAS
 '
 ' Export fault simulation result to file for use in relay setting.
-'
 ' Following fault quantities are being reported at relay group location:
 ' - Phase voltages and currents
 ' - Zero, negative and positive sequence voltage and currents
-'
 ' Output file formats:
 ' - Comma delimited text file (.cvs)
 '
+' Version 1.0
+' Category: OneLiner
 '
-
-
+'
 Sub main()
 
+   dim ShowFlagRly(5)
+   
+   ' Initialize 
+   For ii = 1 To 4 
+     ShowFlagRly(ii) = 1
+   Next 
+   
    VersionNum$ = "1.0"
 
    
    ' Make sure a relay group is being selected
-   If GetEquipment( TC_PICKED, GroupHnd& ) = 0 _
-      Or EquipmentType( GroupHnd ) <> TC_RLYGROUP Then
+   If GetEquipment( TC_PICKED, GroupHnd& ) = 0 Then
      Print "Please select a relay group must before running this script program"
      Exit Sub
    End If
-
+   
+   If EquipmentType( GroupHnd ) <> TC_RLYGROUP Then
+     Print "Please select a relay group must before running this script program"
+     Exit Sub
+   End If
+   
    If PickFault( 1 ) = 0 Then 
      Print "No fault simulation result available"
      Exit Sub
@@ -42,7 +52,7 @@ Sub main()
 
    BrName$   = BName1 + Trim(Str(KV1)) + "-" + BName2 + Trim(Str(KV2))
    
-   FName$    = "c:\" + BrName
+   FName$    = "C:\000tmp\" + BrName
 
    OutCode& = DiaScope( FName$ )
    If OutCode = 0  Then Exit Sub ' Cancel
@@ -101,6 +111,7 @@ Sub main()
    ' Loop over selected faults and export data
    Index = 1
    While PickFault(Index) > 0 
+'   While ShowFault( Index, 9, 1, 0, ShowFlagRly ) > 0
      Call XportAFault( Index, Delim$, BrHnd )
      Index = Index + 1
    Wend
@@ -153,12 +164,6 @@ End Function
 Sub XportAFault( ByVal Index&, ByVal Delim$, ByVal BranchHnd& )
   Dim MagArray(16) As Double
   Dim AngArray(16) As Double
-
-  ' Get end bus name
-  rCode   = GetData( BranchHnd, LN_nBus1Hnd, BusHnd& )
-  BName1$ = FullBusName( BusHnd )
-  rCode   = GetData( BranchHnd, LN_nBus2Hnd, BusHnd& )
-  BName2$ = FullBusName( BusHnd )
 
   ' Get fault info
   FltInfo$ = FaultDescription()

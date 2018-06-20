@@ -5,6 +5,9 @@
 ' Demonstrate how to get primary and backups of the 
 ' selected realy group in a PowerScript program
 '
+' Version 1.0
+' Category: OneLiner
+'
 ' PowerScript functions called:
 '   GetEquipment()
 '   GetData()

@@ -6,6 +6,9 @@
 ' Also do simulation with outage of every lines connected to these
 ' buses. Record maximum fault current in a file
 '
+' Version 1.0
+' Category: OneLiner
+'
 ' Output to a file:
 '  - Fault current
 '  - Max fault current and fault description

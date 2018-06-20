@@ -12,11 +12,14 @@
 '
 Sub main()
 
-   If GetEquipment( TC_PICKED, DevHandle& ) = 0 Or EquipmentType( DevHandle& ) <> TC_SCAP Then
+   If GetEquipment( TC_PICKED, DevHandle& ) = 0 Then
      Print "Please select a series capacitor/reactor"
      Exit Sub
    End If
-
+   If EquipmentType( DevHandle& ) <> TC_SCAP Then
+     Print "Please select a series capacitor/reactor"
+     Exit Sub
+   End If 
   
    ' Modify data
    sFlag$ = InputBox("Enter flag", "Flag" )

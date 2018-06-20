@@ -3,6 +3,9 @@
 '
 ' Perform N-k contingency analysis
 '
+' Version 1.0
+' Category: Power Flow
+'
 ' PowerScript functions called:
 '   FindBusByName()
 '   FullBusName()

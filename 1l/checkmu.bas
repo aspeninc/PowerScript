@@ -8,6 +8,8 @@
 ' The program takes From and To percent into consideration
 ' when calculating Zo
 ' 
+' Version 1.0
+' Category: OneLiner
 '
 Sub main()
    ' Variable declaration

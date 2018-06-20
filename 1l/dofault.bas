@@ -12,6 +12,9 @@
 ' MOV-Protected Series Capacitors," IEEE Transactions on Power Systems, 
 ' Vol. PWRS-2, No. 4, November 1987.)
 '
+' Version 1.0
+' Category: OneLiner
+'
 ' PowerScript functions called:
 '   GetEquipment()
 '   EquipmentType()

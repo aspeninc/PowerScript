@@ -1,3 +1,12 @@
+' ASPEN PowerScript sample program
+'
+' FLTPARAM.BAS
+'
+' Demonstrate how to get fault simulation input parameters
+'
+' Version 1.0
+' Category: OneLiner
+
 Sub main
   If pickFault(1) = 0 Then GoTo HasError
   

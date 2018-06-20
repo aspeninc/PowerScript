@@ -3,8 +3,11 @@
 ' RelayGroupData.BAS
 '
 ' Demo of relay group data access from a PowerScript program
-' 
 '
+' Version 1.0
+' Category: OneLiner
+'
+
 Sub main()
 
   ' Get picked andle

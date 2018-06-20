@@ -16,10 +16,15 @@ Sub main()
  Dim FaultIndex(3000) As Integer
  
  ' Get picked object number
- If GetEquipment( TC_PICKED, ObjHnd ) = 0 Or EquipmentType( ObjHnd ) <> TC_RLYGROUP Then 
+ If GetEquipment( TC_PICKED, ObjHnd ) = 0 Then 
    Print "No relay group is selected"
    Exit Sub
  End If
+ If EquipmentType( ObjHnd ) <> TC_RLYGROUP Then 
+   Print "No relay group is selected"
+   Exit Sub
+ End If
+
  FtCounts = FaultSelector( FaultIndex, "Fault Selector", "Select faults to report" )
  If FtCounts = 0 Then Stop
  

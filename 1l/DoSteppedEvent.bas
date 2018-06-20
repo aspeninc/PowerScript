@@ -2,7 +2,10 @@
 '
 ' DOSTEPPEDEVENT.BAS
 '
-' Demo the DoSpeppedEvent Command
+' Run  DoSpeppedEvent Command
+'
+' Version 1.0
+' Category: OneLiner
 '
 Sub main()
 
@@ -11,34 +14,34 @@ Sub main()
   
 
   ' Get picked bus handle
-  If (GetEquipment( TC_PICKED, nBusHnd& ) = 0) Or _
-     (EquipmentType( nBusHnd& ) <> TC_BUS And EquipmentType( nBusHnd& ) <> TC_RLYGROUP ) Then
+  If (GetEquipment( TC_PICKED, nPickedHnd& ) = 0) Or _
+     (EquipmentType( nPickedHnd& ) <> TC_BUS And EquipmentType( nPickedHnd& ) <> TC_RLYGROUP ) Then
    Print "Please select a bus or relay group"
    Exit Sub
   End If
 
-  vdFltOpt(1) = 5	'nFltConn
-                    '    1=3LG,
-                    '    2=2LG_BC,3=2LG_CA,4=2LG_AB
-                    '    5=1LG_A,6=1LG_B,7=1LG_C,
-                    '    8=LL_BC,9=LL_CA,10=LL_AB
-  vdFltOpt(2) = 10	'Intermediate percent between 0.01-99.99
-                    '   0 For Close-in
-  vdFltOpt(3) = 0	'Fault resistance
-  vdFltOpt(4) = 0	'Fault reactance
-  vdFltOpt(4+1) = 8	'LL BC
+  vdFltOpt(1) = 8	    'nFltConn
+                        '    1=3LG,
+                        '    2=2LG_BC,3=2LG_CA,4=2LG_AB
+                        '    5=1LG_A,6=1LG_B,7=1LG_C,
+                        '    8=LL_BC,9=LL_CA,10=LL_AB
+  vdFltOpt(2) = 5   	'Intermediate percent between 0.01-99.99
+                         '   0= Close-in
+  vdFltOpt(3) = 0	    'Fault resistance
+  vdFltOpt(4) = 0	    'Fault reactance
+  vdFltOpt(4+1) = 8	    'LL BC
   vdFltOpt(4+2) = 0.5	'time
   vdFltOpt(4+3) = 0.5	'Fault resistance
-  vdFltOpt(4+4) = 0	'Fault reactance
-  vdFltOpt(4+5) = 0	'Zero additional event
-  vnDevOpt(1) = 1	'Consider OCGnd
-  vnDevOpt(2) = 1	'Consider OCPh
-  vnDevOpt(3) = 1	'Consider DSGnd
-  vnDevOpt(4) = 1	'Consider DSPh
+  vdFltOpt(4+4) = 0	    'Fault reactance
+  vdFltOpt(4+5) = 0	    'Number of additional events
+  vnDevOpt(1) = 1	    'Consider OCGnd
+  vnDevOpt(2) = 1	    'Consider OCPh
+  vnDevOpt(3) = 1	    'Consider DSGnd
+  vnDevOpt(4) = 1	    'Consider DSPh
   
   nTiers& = 5
   
-  If 0 = DoSteppedEvent( nBusHnd, vdFltOpt, vnDevOpt, nTiers ) Then GoTo HasError
+  If 0 = DoSteppedEvent( nPickedHnd, vdFltOpt, vnDevOpt, nTiers ) Then GoTo HasError
   
   ' Call GetSteppedEvent with 0 to get total number of events simulated
   nSteps = GetSteppedEvent( 0, dTime#, dCurrent#, nUserEvwent&, sEventDesc$, sFaultDest$ )

@@ -4,6 +4,8 @@
 '
 ' Export REL 512 setting data to a text file
 '
+' Version 1.0
+' Category: OneLiner
 ' 
 Sub main()
    Dim ShowRelayFlag (4) As Long

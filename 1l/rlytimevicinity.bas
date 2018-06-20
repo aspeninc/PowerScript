@@ -7,6 +7,8 @@
 ' Demonstrate how to access Shortcircuit simulation result
 ' from a PowerScript program
 '
+' Version 1.0
+' Category: OneLiner
 ' 
 
 Const MXNEIGHBOR = 50

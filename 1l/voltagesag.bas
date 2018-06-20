@@ -6,6 +6,9 @@
 ' Demonstrate how PowerScript program can access Shortcircuit
 ' simulation result
 '
+' Version 1.0
+' Category: OneLiner
+'
 ' PowerScript functions called:
 '   NextBusByName()
 '   FullBusName()
@@ -23,11 +26,11 @@ Sub main()
   End If
 
   ' Prepare output file
-  Open "c:\voltagesag.csv" For Output As 1
+  Open "c:\000tmp\voltagesag.csv" For Output As 1
    Print #1, "Bus,Va,,Vb,,Vc," 
 
    ' Loop through all buses in the network
-   BusHnd = 0
+   BusHnd& = 0
    While NextBusByName( BusHnd ) > 0
       ' Get Bus info
       Bus1ID = FullBusName( BusHnd )

@@ -2,8 +2,10 @@
 ' GETVILpf.BAS
 '
 ' Get voltage and current of the selected line
-'
 ' Demonstrate how to access PF result from a PowerScript program
+'
+' Version 1.0
+' Category: Power Flow
 '
 ' PowerScript functions used
 '  GetEquipment()

@@ -3,6 +3,9 @@
 '
 ' Demonstrate how to access PF result at a bus
 '
+' Version 1.0
+' Category: Power Flow
+'
 ' PowerScript functions used
 '  GetEquipment()
 '  GetData()

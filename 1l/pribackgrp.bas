@@ -4,6 +4,8 @@
 '
 ' Report relay group coordination pairs
 ' 
+' Version 1.0
+' Category: OneLiner
 '
 ' ===================== main() ================================================
 '

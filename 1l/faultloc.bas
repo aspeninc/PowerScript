@@ -5,6 +5,9 @@
 ' Find location of a fault on a line. First simulate an intermediate 
 ' fault every 1 %. Then  compare result to recorded current values.
 ' 
+' Version 1.0
+' Category: OneLiner
+'
 ' PowerScript functions called:
 '   DoFault()
 '   PickFault()

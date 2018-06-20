@@ -4,6 +4,9 @@
 '
 ' Make X-only and R-only network
 '
+' Version 1.0
+' Category: OneLiner
+'
 ' PowerScript functions called:
 '   GetData()
 '   SetData()

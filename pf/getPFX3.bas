@@ -2,8 +2,10 @@
 ' GETPFX3.BAS
 '
 ' Get voltage and flow on a 3-W transformer
-'
 ' Demonstrate how to access PF result from a PowerScript program
+'
+' Version 1.0
+' Category: Power Flow
 '
 ' PowerScript functions used
 '  GetEquipment()

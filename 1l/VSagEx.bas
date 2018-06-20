@@ -3,6 +3,9 @@
 '
 ' Demonstrate the Voltage Save Analysis Command
 '
+' Version 1.0
+' Category: OneLiner
+'
 ' PowerScript functions used
 Sub main()
 

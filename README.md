@@ -1,2 +1,2 @@
 # PowerScript
-PowerScript sample programs
+ASPEN PowerScript sample programs

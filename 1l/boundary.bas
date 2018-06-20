@@ -5,6 +5,9 @@
 '
 ' Demonstrate the BoundaryEquivalent function
 '
+' Version 1.0
+' Category: OneLiner
+'
 Sub main
   dim BusList(40) As long
   dim Options(5) As double

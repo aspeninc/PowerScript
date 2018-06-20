@@ -4,6 +4,8 @@
 '
 ' Export fault simulation data in a file to use in relay testing
 '
+' Version 1.0
+' Category: OneLiner
 '
 ' PowerScript functions called:
 '   GetEquipment()
@@ -21,8 +23,12 @@ Sub main()
    Dim FltDesc(200) As String
 
    ' Make sure a line with relay group is being selected
-   If GetEquipment( TC_PICKED, DevHnd& ) = 0 _
-      Or EquipmentType( DevHnd ) <> TC_RLYGROUP Then
+   If GetEquipment( TC_PICKED, DevHnd& ) = 0 Then
+     Print "Must select a relay group"
+     Exit Sub
+   End If
+   
+   If EquipmentType( DevHnd ) <> TC_RLYGROUP Then
      Print "Must select a relay group"
      Exit Sub
    End If

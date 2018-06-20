@@ -7,6 +7,10 @@
 '
 ' Details are in LineFault_Profile.pdf 
 '
+'
+' Version 1.0
+' Category: OneLiner
+'
 '********** Windows dialog constants
 Const ES_LEFT             = &h0000& 
 Const ES_CENTER           = &h0001& 

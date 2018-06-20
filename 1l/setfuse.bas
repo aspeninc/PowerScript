@@ -2,6 +2,8 @@
 '
 ' SETFUSE.BAS
 '
+' Version 1.0
+' Category: OneLiner
 '
 ' PowerScript functions called:
 '   GetEquipment()

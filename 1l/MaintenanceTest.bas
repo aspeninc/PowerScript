@@ -1,12 +1,15 @@
 ' ASPEN PowerScrip sample program
 '
-' FaultTest.BAS
+' MaintenanceTest.BAS
 '
 ' Run fault simulation on specified transmission line and two adjoining shortest lines
 ' Steps:
 ' 1) Select bus A, B, C and D
 ' 2) Check if branch exist between A and B, B and C, C and D
 ' 3) Run 11 fault simulations
+'
+' Version 1.0
+' Category: OneLiner
 '
 
 Sub Main()

@@ -5,6 +5,8 @@
 ' Simulate fault on remote line(s).
 ' Lines with tap buses are handled correctly
 '
+' Version 1.0
+' Category: OneLiner
 '
 ' Global vars
 dim FarBrHnd(50) As long

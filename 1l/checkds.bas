@@ -4,6 +4,8 @@
 '
 ' Check zone reach setting of distance relays
 '
+' Version 1.0
+' Category: OneLiner
 '
 ' PowerScript functions called:
 '

@@ -5,6 +5,8 @@
 ' Find distance relay zone 1 is over reaching by checking relay operating time
 ' in select bus 3ph&1ph fault.
 '
+' Version: 1.0
+' Category: OneLiner
 '
 ' Global variables
 '

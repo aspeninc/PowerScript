@@ -5,6 +5,8 @@
 ' Simulate fault on remote line(s).
 ' Lines with tap buses are handled correctly
 '
+' Version 2.0
+' Category: OneLiner
 '
 ' Global vars
 const thisFile = "remoteLineFlt"

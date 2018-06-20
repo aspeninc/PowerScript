@@ -4,6 +4,9 @@
 '
 ' Plot graph of relay time vs. distance
 ' 
+' Version 2.0
+' Category: OneLiner
+'
 ' PowerScript functions called:
 '   DoFault()
 '   PickFault()

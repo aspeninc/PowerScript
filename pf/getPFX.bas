@@ -2,8 +2,10 @@
 ' GETPFX.BAS
 '
 ' Get power and current of a load
-'
 ' Demonstrate how to access PF result from a PowerScript program
+'
+' Version 1.0
+' Category: Power Flow
 '
 ' PowerScript functions used
 '  GetEquipment()

@@ -8,6 +8,9 @@
 ' Record fault current, Thevenin impedance and X/R
 ' in a text or csv file and write out all line flows
 '
+' Version 1.0
+' Category: OneLiner
+'
 ' PowerScript functions called:
 '   GetEquipment()
 '   NextBusByName()

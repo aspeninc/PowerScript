@@ -23,6 +23,8 @@
 ' Multiple fault simulations can be saved in a single file except in the COMTRADE 
 ' format file which can contain only a one fault result.
 '
+' Version 1.0
+' Category: OneLiner
 '
 Const pi = 3.141592654
 Dim OutZ As Long, OutN As Long

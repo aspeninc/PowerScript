@@ -8,6 +8,8 @@
 '
 ' Global vars and constant
 '
+' Version 1.0
+' Category: OneLiner
 '
 
 Const FuseLimit = 10000

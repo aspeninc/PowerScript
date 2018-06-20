@@ -5,6 +5,8 @@
 ' Find distance relay zone 1, 2 or 3 reach by checking relay operating time
 ' in intermediate faults on transmission line.
 '
+' Version 3.0
+' Category: OneLiner
 '
 ' Global variables
 '

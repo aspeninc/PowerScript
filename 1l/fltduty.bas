@@ -6,6 +6,8 @@
 ' Record fault current, Thevenin impedance and X/R
 ' in a text or csv file
 '
+' Version 1.0
+' Category: OneLiner
 '
 ' PowerScript functions called:
 '   GetEquipment()

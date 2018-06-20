@@ -2,8 +2,10 @@
 ' GETPFPS.BAS
 '
 ' Get voltage and flow on a phase shifter
-'
 ' Demonstrate how to access PF result from a PowerScript program
+'
+' Version 1.0
+' Category: Power Flow
 '
 ' PowerScript functions used
 '  GetEquipment()

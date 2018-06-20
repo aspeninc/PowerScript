@@ -15,6 +15,9 @@
 '
 ' Last modified: 6/15/2004
 '
+' Version 1.0
+' Category: OneLiner
+'
 ' Program options:
 Const dThreshold = 0.7
 Const GenFile$   = "c:\generator.csv" 'Generator list

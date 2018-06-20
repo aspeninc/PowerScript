@@ -9,6 +9,8 @@
 ' - Negative sequence current or Phase B current if the fault type is LL or LLG
 ' The output will be displayed in the TTY window
 '
+' Version 1.0
+' Category: OneLiner
 '
 Const MXFLT = 2000
 ' Global variable declaration

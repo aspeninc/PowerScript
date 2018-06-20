@@ -4,6 +4,10 @@
 '
 ' Find substation relay groups on line terminals
 '
+' Version 1.0
+' Category: OneLiner
+'
+'
 Const DEBUGPRINT = 0
 Const MXSUBS = 200
 

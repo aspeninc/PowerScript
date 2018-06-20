@@ -12,6 +12,9 @@
 ' - Formated text file (.txt)
 ' - Comma delimited text file (.cvs)
 '
+' Version 1.0
+' Category: OneLiner
+'
 ' PowerScript functions called:
 '   GetEquipment()
 '   FullBusName()
@@ -29,8 +32,12 @@ Sub main()
 
 
    ' Make sure a line with relay group is being selected
-   If GetEquipment( TC_PICKED, BranchHnd& ) = 0 _
-      Or EquipmentType( BranchHnd ) <> TC_LINE Then
+   If GetEquipment( TC_PICKED, BranchHnd& ) = 0 Then
+     Print "Must select a line"
+     Exit Sub
+   End If
+   
+   If EquipmentType( BranchHnd ) <> TC_LINE Then
      Print "Must select a line"
      Exit Sub
    End If

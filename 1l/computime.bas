@@ -4,6 +4,9 @@
 '
 ' Report relay operating time given voltage and current input
 '
+' Version 1.0
+' Category: OneLiner
+'
 '
 Const ES_LEFT             = &h0000&  ' Try these different styles or-ed together
 Const ES_CENTER           = &h0001&  ' as the last parameter of Textbox the change

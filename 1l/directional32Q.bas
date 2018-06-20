@@ -4,6 +4,8 @@
 '
 ' Simulated 32Q directional logic
 '
+' Version 1.0
+' Category: OneLiner
 '
 Sub main()
  Dim MagArray(12) As Double
@@ -14,11 +16,16 @@ Sub main()
  MTA = 75
  
  ' Get picked object number
- If GetEquipment( TC_PICKED, ObjHnd ) = 0 Or EquipmentType( ObjHnd ) <> TC_RLYGROUP Then 
+ If GetEquipment( TC_PICKED, ObjHnd ) = 0 Then 
    Print "Please select a relay group"
    Exit Sub
  End If
-
+ 
+ If EquipmentType( ObjHnd ) <> TC_RLYGROUP Then
+   Print "Please select a relay group"
+   Exit Sub
+ End If
+ 
  ' Must alway show fault before getting V and I
  If ShowFault( 1, 1, 4, 0, DummyArray ) = 0 Then GoTo HasError
 

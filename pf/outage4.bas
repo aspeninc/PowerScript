@@ -4,6 +4,9 @@
 ' Perform N-k contingency analysis
 ' Lines connected to the same tap bus are outaged all at once
 '
+' Version 1.0
+' Category: Power Flow
+'
 ' PowerScript functions called:
 '   FindBusByName()
 '   FullBusName()
