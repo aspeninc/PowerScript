@@ -4,6 +4,11 @@
 '
 ' Compute source to line impedance ratio of selected buses and generate report
 '
+' !!!!! Warning !!!!!!!!!!
+'   The source impedance calculation in this script does not always
+'   produce accurate results. See SIR.BAS script for correct SIR calculation.
+' !!!!!!!!!!!!!!!!!!!!!!!!
+
 ' Version: 1.0
 ' Category: OneLiner
 '

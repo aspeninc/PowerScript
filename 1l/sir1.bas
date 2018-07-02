@@ -2,6 +2,11 @@
 '
 ' SIR1.BAS
 '
+' !!!!! Warning !!!!!!!!!!
+'   The source impedance calculation in this script does not always
+'   produce accurate results. See SIR.BAS script for correct SIR calculation.
+' !!!!!!!!!!!!!!!!!!!!!!!!
+'
 ' Compute source to line impedance ratio with voltage
 '
 ' Version 1.0
