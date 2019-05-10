@@ -115,7 +115,7 @@ Sub main()
   ' Show it
   
    OutString$ = OutString$ & Chr(13) & "MTA=" & Format(MTA, "#0.0") & chr(13) & _
-      "COS(IpolAngle-IoAngle-MTA)=" & Format( Cos(3.14156/180*IpolAng-I0ang-MTA), "#0.00" )
+      "COS(IpolAngle-IoAngle-MTA)=" & Format( Cos(3.14159/180*IpolAng-I0ang-MTA), "#0.00" )
       
    Print OutString$
             

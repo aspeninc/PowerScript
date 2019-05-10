@@ -4,7 +4,7 @@
 '
 ' Report relay operating time given voltage and current input
 '
-' Version 1.0
+' Version 1.1
 ' Category: OneLiner
 '
 '
@@ -93,26 +93,32 @@ Sub main()
    End If
 
 '=============Dialog Spec=============
-Begin Dialog DIALOG_1 80,37,334,154, "Relay Time Calculation", .enable
+Begin Dialog DIALOG_1 80,37,458,157, "Relay Time Calculation"
   Text 8,8,84,8,"Relay"
-  Text 91,7,275,8,"Voltages and Currents in primary KV L-N and A"
+  Text 91,7,355,8,"Enter pre-fault and phase voltages and currents phasors as magnitude@angle (primary kV L-N, A and degree)"
   ListBox 8,20,78,55,RelayList(), .ListBox_1
-  PushButton 152,69,102,12,"Compute Relay Operation", .Button2
+  PushButton 203,69,102,12,"Compute Relay Operation", .Button2
   PushButton 267,134,59,13,"Done", .Button3
-  PushButton 178,133,40,10,"Clear", .Button4
+  PushButton 107,136,40,10,"Clear", .Button4
   PushButton 8,134,74,13,"Apply and Compute", .Button1
-  TextBox 90,20,237,44,.Edit1, ES_MEMO
-  TextBox 90,86,237,44,.Edit2, ES_MEMO
-  TextBox 9,95,77,35,.Edit3, ES_MEMO
+  TextBox 90,20,363,44,.Edit1
+  TextBox 90,86,364,44,.Edit2
+  TextBox 9,95,77,35,.Edit3
   PushButton 19,78,51,13,"Get Settings", .Button5
 End Dialog
+
 '=====================================
 
    Dim Dlg As Dialog_1
    dim sInput As String
    dim sOutput As String
    
-   sInput    = "I=1000@0 V=" & Format(vdVmag(0),"0.00") & "@" & Format(vdVang(0),"0.00")
+   sInput    = "IP=1000@0 VP=" & Format(vdVmag(0),"0.00") & "@" & Format(vdVang(0),"0.00 ") & _
+               "IA=1000@0 VA=1000@0 " & _
+               "IB=1000@0 VB=1000@0 " & _
+               "IC=1000@0 VC=1000@0 " & _
+               "IN1=1000@0 " & _
+               "IN2=1000@0 "
    sOutput   = ""
    sSettings = ""
 
@@ -171,14 +177,14 @@ End Dialog
                 dTime#, sDevice$ ) 
           sOutput = sOutput & RelayList(Dlg.ListBox_1) & ":" & _
                   " T="   & Format(dTime,"0.00") & "(" & sDevice & ")" & _
-                  ";Ia="  & Format(vdImag(0),"0.0") & "@" & Format(vdIang(0),"0.0") & _
-                  ";Ib="  & Format(vdImag(1),"0.0") & "@" & Format(vdIang(1),"0.0") & _
-                  ";Ic="  & Format(vdImag(2),"0.0") & "@" & Format(vdIang(2),"0.0") & _
-                  ";IN1=" & Format(vdImag(3),"0.0") & "@" & Format(vdIang(4),"0.0") & _
-                  ";IN2=" & Format(vdImag(4),"0.0") & "@" & Format(vdIang(4),"0.0") & _
-                  ";Va="  & Format(vdVmag(0),"0.0") & "@" & Format(vdVang(0),"0.0") & _
-                  ";Vb="  & Format(vdVmag(2),"0.0") & "@" & Format(vdVang(0),"0.0") & _
-                  ";Vc="  & Format(vdVmag(3),"0.0") & "@" & Format(vdVang(0),"0.0") & _
+                  ";Ia="  & Format(vdImag(1),"0.0") & "@" & Format(vdIang(1),"0.0") & _
+                  ";Ib="  & Format(vdImag(2),"0.0") & "@" & Format(vdIang(2),"0.0") & _
+                  ";Ic="  & Format(vdImag(3),"0.0") & "@" & Format(vdIang(3),"0.0") & _
+                  ";IN1=" & Format(vdImag(4),"0.0") & "@" & Format(vdIang(4),"0.0") & _
+                  ";IN2=" & Format(vdImag(5),"0.0") & "@" & Format(vdIang(5),"0.0") & _
+                  ";Va="  & Format(vdVmag(1),"0.0") & "@" & Format(vdVang(1),"0.0") & _
+                  ";Vb="  & Format(vdVmag(2),"0.0") & "@" & Format(vdVang(2),"0.0") & _
+                  ";Vc="  & Format(vdVmag(3),"0.0") & "@" & Format(vdVang(3),"0.0") & _
                   Chr(13) & Chr(10)
         End If
       Wend 'While nTokVI& > 0
@@ -288,7 +294,7 @@ Function PrintSettings(ByVal nRlyHnd,ByRef sSettings)
 End Function
 
 Function ProcessVIText( ByVal RlyHnd, ByVal Str$, ByRef vdVmag() As double, ByRef vdVang() As double, _
-  ByRef vdImag() As double, ByRef vdIang() As double, ByVal dVpreMag#, ByVal dVpreAng# ) As long
+  ByRef vdImag() As double, ByRef vdIang() As double, ByRef dVpreMag#, ByRef dVpreAng# ) As long
    
   dim nTok As long
   
@@ -317,7 +323,7 @@ Function ProcessVIText( ByVal RlyHnd, ByVal Str$, ByRef vdVmag() As double, ByRe
     elseif sKey = "IANG" Then
       vdIang(0) = dVal
       nI = nI + 1
-    elseif sKey = "I" Or sKey = "IA" Then
+    elseif sKey = "I"Then
       vdImag(0) = dMag
       vdIang(0) = dAng
       vdImag(1) = vdImag(0)
@@ -329,7 +335,7 @@ Function ProcessVIText( ByVal RlyHnd, ByVal Str$, ByRef vdVmag() As double, ByRe
       vdIang(3) = vdIang(0)
       vdIang(4) = vdIang(0)
       nI = nI + 1
-    elseif sKey = "V" Or sKey = "VA" Then
+    elseif sKey = "V" Then
       vdVmag(0) = dMag
       vdVang(0) = dAng
       vdVmag(1) = vdVmag(0)
@@ -338,6 +344,42 @@ Function ProcessVIText( ByVal RlyHnd, ByVal Str$, ByRef vdVmag() As double, ByRe
       vdVang(2) = vdVang(0) - 120
       dVpreMag  = vdVmag(0)
       dVpreAng  = vdVang(0)
+      nV = nV + 1
+    elseif sKey = "IA" Then
+      vdImag(1) = dMag
+      vdIang(1) = dAng
+      nI = nI + 1
+    elseif sKey = "IB" Then
+      vdImag(2) = dMag
+      vdIang(2) = dAng
+      nI = nI + 1
+    elseif sKey = "IC" Then
+      vdImag(3) = dMag
+      vdIang(3) = dAng
+      nI = nI + 1
+    elseif sKey = "IN1" Then
+      vdImag(4) = dMag
+      vdIang(4) = dAng
+      nI = nI + 1
+    elseif sKey = "IN2" Then
+      vdImag(5) = dMag
+      vdIang(5) = dAng
+      nI = nI + 1
+    elseif sKey = "VA" Then
+      vdVmag(1) = dMag
+      vdVang(1) = dAng
+      nV = nV + 1
+    elseif sKey = "VB" Then
+      vdVmag(2) = dMag
+      vdVang(2) = dAng
+      nV = nV + 1
+    elseif sKey = "VC" Then
+      vdVmag(3) = dMag
+      vdVang(3) = dAng
+      nV = nV + 1
+    elseif sKey = "VP" Then
+      dVpreMag = dMag
+      dVpreAng = dAng
       nV = nV + 1
     End If
     cont1:

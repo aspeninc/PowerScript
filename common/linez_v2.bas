@@ -222,7 +222,7 @@ End Function
 Function printImpedance( dR#, dX#, dKV# ) As String
  dMag = Sqr( dR#^2 + dX#^2 )*dKV#^2/100
  If dR# <> 0.0 Then 
-   dAng = Atn(dX#/dR#)*180/3.14156 
+   dAng = Atn(dX#/dR#)*180/3.14159 
  Else 
    if dX# > 0 then dAng = 90 else dAng = -90
  End If

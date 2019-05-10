@@ -324,10 +324,10 @@ End Sub
 Function dAdd( ByVal Mag1 As Double, ByVal Ang1 As Double, _
                ByVal Mag2 As Double, ByVal Ang2 As Double, _
                ByRef Mag3 As Double, ByRef Ang3 As Double ) As Long
-   Ang1   = Ang1 *3.14156/180.0
+   Ang1   = Ang1 *3.14159/180.0
    Real1# = Mag1*Cos(Ang1)
    Imag1# = Mag1*Sin(Ang1)
-   Ang2   = Ang2 *3.14156/180.0
+   Ang2   = Ang2 *3.14159/180.0
    Real2# = Mag2*Cos(Ang2)
    Imag2# = Mag2*Sin(Ang2)
    Real3# = Real1+Real2
@@ -342,7 +342,7 @@ Function dR2P( ByVal Real As Double, ByVal Imag As Double, _
                ByRef Mag As Double, ByRef Ang As Double ) As Long
    Ang  = Atn(Abs(Imag/Real))
    Mag  = Abs(Real / Cos(Ang))
-   Ang  = Ang*180.0/3.14156
+   Ang  = Ang*180.0/3.14159
    If Imag > 0 And Real < 0 Then Ang = Ang + 90
    If Imag < 0 And Real < 0 Then Ang = Ang + 180
    If Imag < 0 And Real > 0 Then Ang = Ang - 90

@@ -2,7 +2,7 @@
 '
 ' DATAWKS.BAS
 '
-' Version: 2.3
+' Version 2.5
 '
 ' Import network data from excel spreadsheet 
 '
@@ -29,6 +29,7 @@ Const aType_Load$    = "Browser Report for Loads"
 Const aType_Shc$     = "Browser Report for Shunts"
 Const aType_Bus$     = "Browser Report for Buses"
 Const aType_Breaker$ = "Browser Report for Breakers"
+Const aType_Scap$    = "Browser Report for Series Capacitors/Reactors"
 
 Const code_Memo = -999
 Const code_Tags = -998
@@ -174,7 +175,10 @@ Function checkHeader( ByRef Array() As String, ByVal colCount, ByRef aType As St
       If checkHeader Then nCountCodes& = InitParamCode_Bus(sLabels,nCodes)	
     case aType_Breaker
       checkHeader = checkHeader_Breaker( Array, colcount )
-      If checkHeader Then nCountCodes& = InitParamCode_Breaker(sLabels,nCodes)	  
+      If checkHeader Then nCountCodes& = InitParamCode_Breaker(sLabels,nCodes)	 
+    case aType_Scap
+      checkHeader = checkHeader_Scap( Array, colcount )
+      If checkHeader Then nCountCodes& = InitParamCode_Scap(sLabels,nCodes)	 
   End select
 End Function
 
@@ -244,7 +248,9 @@ Function processRow( ByRef FieldName() As String, ByRef FieldVal() As String, By
     case aType_Bus
       processRow = processRow_Bus( FieldName, FieldVal, cols )  
     case aType_Breaker
-      processRow = processRow_Breaker( FieldName, FieldVal, cols )   
+      processRow = processRow_Breaker( FieldName, FieldVal, cols ) 
+    case aType_Scap 
+      processRow = processRow_Scap( FieldName, FieldVal, cols ) 
   End select
 End Function
 
@@ -413,6 +419,21 @@ Function breakerSearch( busHnd&, breakerName$ )
       breakerSearch = breakerHnd
       exit Do
     End If
+  Wend
+End Function
+
+' Find series capacitor/reactor handle
+Function scapSearch( bus1Hnd&, bus2Hnd&, CktID$ ) 
+  scapSearch = 0
+  scapHnd&   = 0
+  While GetEquipment( TC_SCAP, scapHnd& ) > 0 
+    Call GetData(scapHnd, SC_nBus1Hnd, Hnd1&)
+    Call GetData(scapHnd, SC_nBus2Hnd, Hnd2&)
+    Call GetData(scapHnd, SC_sID, myID$)
+    If bus1Hnd = Hnd1 And bus2Hnd = Hnd2 And myID = CktID Then
+      scapSearch = scapHnd
+      exit Do
+    End If 
   Wend
 End Function
 
@@ -1713,7 +1734,7 @@ Function InitParamCode_Breaker( l() As String, c() As long ) As long
   c(14) = code_Tags
   c(15) = code_Memo
 
-  InitParamCode_Breaker = 14
+  InitParamCode_Breaker = 15
 End Function
 Function checkHeader_Breaker( ByRef Array() As String, ByVal colCount )
   okBusName     = false
@@ -1778,6 +1799,99 @@ Function processRow_Breaker( ByRef FieldName() As String, ByRef FieldVal() As St
     End If
     PrintTTY("  Updated: " & listUpdated )
     processRow_Breaker = countUpdated
+  Else
+    PrintTTY("  Error: Nothing to update" )
+  End If
+End Function
+
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+''''''''''''''''''''''Series Capacitors/Reactors''''''''''''''''''''''
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+Function InitParamCode_Scap( l() As String, c() As long ) As long
+  l(1)  = "In Serv"
+  l(2)  = "Name"
+  l(3)  = "R"
+  l(4)  = "X"
+  l(5)  = "Ipr"
+  l(6)  = "R0"
+  l(7)  = "X0"
+  
+  c(1)  = SC_nInService
+  c(2)  = SC_sName
+  c(3)  = SC_dR
+  c(4)  = SC_dX
+  c(5)  = SC_dIpr
+  c(6)  = SC_dR0
+  c(7)  = SC_dX0
+
+  InitParamCode_Scap = 7
+End Function
+Function checkHeader_Scap( ByRef Array() As String, ByVal colCount )
+  okBus1  = false
+  okBus2  = false
+  okCktID = false
+  checkHeader_Scap = false
+  For ii = 1 to colCount
+    If Array(ii) = "Bus 1" Then okBus1  = true
+    If Array(ii) = "Bus 2" Then okBus2  = true
+    If Array(ii) = "CktID"   Then okCktID = true
+    If okBus1 And okBus2 And okCktID Then
+      checkHeader_Scap = true
+      exit For
+    End If
+  Next
+End Function
+Function processRow_Scap( ByRef FieldName() As String, ByRef FieldVal() As String, ByVal cols ) As long
+  processRow_Scap = 0
+  bus1Hnd& = -1
+  bus2Hnd& = -1
+  CktID$   = "999"
+  scapHnd& = 0
+  For ii = 1 to cols
+    If FieldName(ii) = "Bus 1" Then bus1Hnd = findBusHnd(FieldVal(ii))
+    If FieldName(ii) = "Bus 2" Then bus2Hnd = findBusHnd(FieldVal(ii))
+    If FieldName(ii) = "CktID"   Then CktID   = FieldVal(ii)
+    If bus1Hnd> -1 And bus2Hnd > -1 And CktID <> "999" Then
+      scapHnd& = scapSearch( bus1Hnd, bus2Hnd, CktID )
+      exit For
+    End If
+  Next
+  If scapHnd = 0 Then 
+    printTTY("  Error: Object not found")
+    exit Function
+  End If
+  countUpdated = 0
+  listUpdated$ = ""
+  For ii = 1 to cols
+    nIndex = 0
+    sFieldVal$ = FieldVal(ii)
+    paramID = LookupParamCode(sLabels,nCodes,nCountCodes,FieldName(ii),1)
+    If paramID = 0 Or sFieldVal = "NA"Then 
+      GoTo NextIteration
+    End If
+    If 0 < SetFieldValue(sLabels,nCodes,nCountCodes,sFieldVal,scapHnd,paramID&,nIndex) Then
+      countUpdated = countUpdated + 1
+      If listUpdated <> "" Then listUpdated = listUpdated & "," & FieldName(ii) Else listUpdated = FieldName(ii)
+    End If
+    If (FieldName(ii) = "R") Or (FieldName(ii) = "X") Then
+	  paramID = LookupParamCode(sLabels,nCodes,nCountCodes,FieldName(ii)&"0",1)
+	  If paramID = 0 Or sFieldVal = "NA"Then 
+	    GoTo NextIteration
+	  End If
+	  If 0 < SetFieldValue(sLabels,nCodes,nCountCodes,sFieldVal,scapHnd,paramID&,nIndex) Then
+	    countUpdated = countUpdated + 1
+	    If listUpdated <> "" Then listUpdated = listUpdated & "," & FieldName(ii ) & "0" Else listUpdated = FieldName(ii) & "0"
+	  End If  
+    End If  
+    NextIteration
+  Next
+  If countUpdated > 0 Then
+    If PostData(scapHnd) = 0 Then
+      PrintTTY("  Error: " + ErrorString())
+      exit Function
+    End If
+    PrintTTY("  Updated: " & listUpdated )
+    processRow_Scap = countUpdated
   Else
     PrintTTY("  Error: Nothing to update" )
   End If

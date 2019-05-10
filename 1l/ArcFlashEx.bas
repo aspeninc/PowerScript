@@ -154,8 +154,10 @@ Sub main()
             sEquipment = "Switchgear"
           Case 1
             sEquipment = "Cable"
+          Case 2
+            sEquiment = "Open air"
           Case Else
-            sEquiment = "open air"
+            sEquiment = "MCCs and Panelboards"
         End Select  
         If vdOption(2) = 0 Then
           sGrounded = "No"
