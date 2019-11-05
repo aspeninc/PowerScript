@@ -2,19 +2,16 @@
 '
 ' DATAWKS.BAS
 '
-' Version 2.5
+' Version 2.7
 '
-' Import network data from excel spreadsheet 
+' Import network data from excel spreadsheets 
 '
-' Spreadsheet must be in the same directory as OLR file. 
-'
-' Spreadsheet must have:
-' 1- FILESIGNATURE in cell A1
-' 2- aType_XXX in cell A2
-' 3- Header in row 3 as in the corresponding data browser table
-' 4- Data rows in same format as in the corresponding browser table
-' 5- Key columns must present. All other columns are optional
-'
+' Spreadsheet must have data rows in exact same format as in 
+' the corresponding OneLiner data browser report table. Specifically
+' following rows must be included:
+' 1- FILESIGNATURE$
+' 2- Table type signature aType_XXX$ 
+' 3- Header row that matches the corresponding data browser table
 '
 '
 ' Global vars and consts
@@ -30,6 +27,10 @@ Const aType_Shc$     = "Browser Report for Shunts"
 Const aType_Bus$     = "Browser Report for Buses"
 Const aType_Breaker$ = "Browser Report for Breakers"
 Const aType_Scap$    = "Browser Report for Series Capacitors/Reactors"
+Const aType_Ocp$     = "Browser Report for Overcurrent Relay-Phase"
+Const aType_Ocg$     = "Browser Report for Overcurrent Relay-Ground"
+Const aType_Dsp$     = "Browser Report for Distance Relay-Phase"
+Const aType_Dsg$     = "Browser Report for Distance Relay-Ground"
 
 Const code_Memo = -999
 Const code_Tags = -998
@@ -178,7 +179,19 @@ Function checkHeader( ByRef Array() As String, ByVal colCount, ByRef aType As St
       If checkHeader Then nCountCodes& = InitParamCode_Breaker(sLabels,nCodes)	 
     case aType_Scap
       checkHeader = checkHeader_Scap( Array, colcount )
-      If checkHeader Then nCountCodes& = InitParamCode_Scap(sLabels,nCodes)	 
+      If checkHeader Then nCountCodes& = InitParamCode_Scap(sLabels,nCodes)	
+    case aType_Ocp
+      checkHeader = checkHeader_Ocp( Array, colcount )
+      If checkHeader Then nCountCodes& = InitParamCode_Ocp(sLabels,nCodes)
+    case aType_Ocg
+      checkHeader = checkHeader_Ocg( Array, colcount )
+      If checkHeader Then nCountCodes& = InitParamCode_Ocg(sLabels,nCodes) 
+    case aType_Dsp
+      checkHeader = checkHeader_Dsp( Array, colcount )
+      If checkHeader Then nCountCodes& = InitParamCode_Dsp(sLabels,nCodes)
+    case aType_Dsg
+      checkHeader = checkHeader_Dsg( Array, colcount )
+      If checkHeader Then nCountCodes& = InitParamCode_Dsg(sLabels,nCodes) 	 
   End select
 End Function
 
@@ -251,6 +264,14 @@ Function processRow( ByRef FieldName() As String, ByRef FieldVal() As String, By
       processRow = processRow_Breaker( FieldName, FieldVal, cols ) 
     case aType_Scap 
       processRow = processRow_Scap( FieldName, FieldVal, cols ) 
+    case aType_Ocp 
+      processRow = processRow_Ocp( FieldName, FieldVal, cols )
+    case aType_Ocg 
+      processRow = processRow_Ocg( FieldName, FieldVal, cols )
+    case aType_Dsp 
+      processRow = processRow_Dsp( FieldName, FieldVal, cols )
+    case aType_Dsg 
+      processRow = processRow_Dsg( FieldName, FieldVal, cols )    
   End select
 End Function
 
@@ -289,7 +310,7 @@ Function LookupParamCode( l() As String, c() As long, nLen&, sLabel$, ByVal jj )
   Next
 End Function
 
- ' Find branch handle 
+ ' Find branch equipment handle 
 Function branchSearch( nType&, bus1Hnd&, bus2Hnd&, bus3Hnd&, CktID$ )
   branchSearch = 0
   branchHnd&   = 0
@@ -317,6 +338,41 @@ Function branchSearch( nType&, bus1Hnd&, bus2Hnd&, bus3Hnd&, CktID$ )
         CktIDTmp$ = "0" + CktID$
         If myID = CktID Or myID = CktIDTmp Or (Len(myID) = 0 And Len(CktID) = 0) Then
           branchSearch = thisItemHnd
+          exit Do
+        End If
+      End If
+    End If
+  Wend
+End Function
+
+ ' Find branch handle 
+Function branchHndSearch( nType&, bus1Hnd&, bus2Hnd&, bus3Hnd&, CktID$ )
+  branchHndSearch = 0
+  branchHnd&   = 0
+  select case nType
+    case TC_LINE
+      thisTypeID = LN_sID
+    case TC_XFMR
+      thisTypeID = XR_sID
+    case TC_XFMR3
+      thisTypeID = X3_sID
+    case TC_PS
+      thisTypeID = PS_sID
+    case default
+      Print "Error in branchSearch()"
+      Stop
+  End select
+  While GetBusEquipment( bus1Hnd, TC_BRANCH, branchHnd ) > 0
+    Call GetData(branchHnd, BR_nHandle, thisItemHnd&)
+    If EquipmentType(thisItemHnd) = nType Then
+      Call GetData(branchHnd, BR_nBus1Hnd, farBusHnd&)
+      If farBusHnd = bus1Hnd Then Call GetData(branchHnd, BR_nBus2Hnd, farBusHnd&)
+      If farBusHnd = bus2Hnd Then
+        Call GetData(thisItemHnd, thisTypeID, myID$)
+        myID = Trim(myID)
+        CktIDTmp$ = "0" + CktID$
+        If myID = CktID Or myID = CktIDTmp Or (Len(myID) = 0 And Len(CktID) = 0) Then
+          branchHndSearch = branchHnd
           exit Do
         End If
       End If
@@ -437,6 +493,75 @@ Function scapSearch( bus1Hnd&, bus2Hnd&, CktID$ )
   Wend
 End Function
 
+' Find overcurrent relay-phase handle
+Function ocpSearch( brHnd&, ID$ )
+  ocpSearch = 0
+  ocpHnd&   = 0 
+  RlyGrpHnd1& = 0
+  Call GetData(brHnd, BR_nRlyGrp1Hnd, RlyGrpHnd1&)
+  While GetEquipment( TC_RLYOCP, ocpHnd& ) > 0
+    Call GetData(ocpHnd, OP_sID, myID$)
+    Call GetData(ocpHnd, OP_nRlyGrHnd, RlyGrpHnd2)
+    If myID = ID And RlyGrpHnd1 = RlyGrpHnd2 Then
+      ocpSearch = ocpHnd
+      exit Do
+    End If  
+  Wend
+End Function
+
+' Find overcurrent relay-ground handle
+Function ocgSearch( brHnd&, ID$ )
+  ocgSearch = 0
+  ocgHnd&   = 0
+  RlyGrHnd& = 0
+  BranchHnd&= 0
+  While GetEquipment( TC_RLYOCG, ocgHnd& ) > 0
+    Call GetData(ocgHnd, OG_sID, myID$)
+    Call GetData(ocgHnd, OG_nRlyGrHnd, RlyGrHnd)
+    Call GetData(RlyGrHnd, RG_nBranchHnd, BranchHnd)
+    If myID = ID And brHnd = BranchHnd Then
+      ocgSearch = ocgHnd
+      exit Do
+    End If  
+  Wend
+End Function
+
+' Find distance relay-phase handle
+Function dspSearch( brHnd&, ID$, ID2$ )
+  dspSearch = 0
+  dspHnd&   = 0
+  RlyGrHnd& = 0
+  BranchHnd&= 0
+  While GetEquipment( TC_RLYDSP, dspHnd& ) > 0
+    Call GetData(dspHnd, DP_sID, myID$)
+    Call GetData(dspHnd, DP_sType, myID2$)
+    Call GetData(dspHnd, DP_nRlyGrHnd, RlyGrHnd)
+    Call GetData(RlyGrHnd, RG_nBranchHnd, BranchHnd)
+    If myID = ID And myID2 = ID2 And brHnd = BranchHnd Then
+      dspSearch = dspHnd
+      exit Do
+    End If  
+  Wend
+End Function
+
+' Find distance relay-ground handle
+Function dsgSearch( brHnd&, ID$, ID2$ )
+  dsgSearch = 0
+  dsgHnd&   = 0
+  RlyGrHnd& = 0
+  BranchHnd&= 0
+  While GetEquipment( TC_RLYDSG, dsgHnd& ) > 0
+    Call GetData(dsgHnd, DG_sID, myID$)
+    Call GetData(dsgHnd, DG_sType, myID2$)
+    Call GetData(dsgHnd, DG_nRlyGrHnd, RlyGrHnd)
+    Call GetData(RlyGrHnd, RG_nBranchHnd, BranchHnd)
+    If myID = ID And myID2 = ID2 And brHnd = BranchHnd Then
+      dsgSearch = dsgHnd
+      exit Do
+    End If  
+  Wend
+End Function
+
  ' Set field value 
 Function SetFieldValue( sLabels() As String, nCodes() As long, nCountCodes&, sFieldVal$, thisHnd&, paramID&, nIndex) As long
   nChanged$ = 0
@@ -514,6 +639,12 @@ Function SetFieldValue( sLabels() As String, nCodes() As long, nCountCodes&, sFi
         nVal& = 0
       Elseif UCase(sFieldVal) = "PQ" Then
         nVal& = 1    
+      Elseif UCase(sFieldVal) = "WYE" Then
+        nVal& = 0
+      Elseif UCase(sFieldVal) = "DELTA" Then
+        nVal& = 1
+      Elseif UCase(sFieldVal) = "FUSE INSIDE DELTA" Then
+        nVal& = 3
       Else
         nVal& = Val(sFieldVal)
       End If 
@@ -1257,56 +1388,58 @@ End Function
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 Function InitParamCode_Gen( l() As String, c() As long ) As long
   l(1)  = "In Serv."
-  l(2)  = "Ref. V"
-  l(3)  = "Ref.Ang."
-  l(4)  = "Regulation"
-  l(5)  = "Limit A"
-  l(6)  = "Limit B"
-  l(7)  = "Subtransient"
+  l(2)  = "MVA" 
+  l(3)  = "Ref. V"
+  l(4)  = "Ref.Ang."
+  l(5)  = "Regulation"
+  l(6)  = "Limit A"
+  l(7)  = "Limit B"
   l(8)  = "Subtransient"
-  l(9)  = "Transient"
-  l(10) = "Transient"
-  l(11) = "Synchronous"
+  l(9)  = "Subtransient"
+  l(10)  = "Transient"
+  l(11) = "Transient"
   l(12) = "Synchronous"
-  l(13) = "Neg. Seq."
+  l(13) = "Synchronous"
   l(14) = "Neg. Seq."
-  l(15) = "Zero Seq."
+  l(15) = "Neg. Seq."
   l(16) = "Zero Seq."
-  l(17) = "Neutral Imp."
+  l(17) = "Zero Seq."
   l(18) = "Neutral Imp."
-  l(19) = "P Min"
-  l(20) = "P Max"
-  l(21) = "Q Min"
-  l(22) = "Q Max"
-  l(23) = "Memo"
-  l(24) = "Tags"
+  l(19) = "Neutral Imp."
+  l(20) = "P Min"
+  l(21) = "P Max"
+  l(22) = "Q Min"
+  l(23) = "Q Max"
+  l(24) = "Memo"
+  l(25) = "Tags"
 
   c(1)  = GU_nOnline
-  c(2)  = GE_dVSourcePU
-  c(3)  = GE_dRefAngle
-  c(4)  = GE_nFixedPQ
-  c(5)  = GE_dCurrLimit1
-  c(6)  = GE_dCurrLimit2
-  c(7)  = GU_vdR
-  c(8)  = GU_vdX
-  c(9)  = GU_vdR
-  c(10) = GU_vdX
-  c(11) = GU_vdR
-  c(12) = GU_vdX
-  c(13) = GU_vdR
-  c(14) = GU_vdX
-  c(15) = GU_vdR
-  c(16) = GU_vdX
-  c(17) = GU_dRz
-  c(18) = GU_dXz
-  c(19) = GU_dPmin
-  c(20) = GU_dPmax
-  c(21) = GU_dQmin
-  c(22) = GU_dQmax
-  c(23) = code_Memo
-  c(24) = code_Tags
+  c(2)  = GU_dMVArating
+  c(3)  = GE_dVSourcePU
+  c(4)  = GE_dRefAngle
+  c(5)  = GE_nFixedPQ
+  c(6)  = GE_dCurrLimit1
+  c(7)  = GE_dCurrLimit2
+  c(8)  = GU_vdR
+  c(9)  = GU_vdX
+  c(10)  = GU_vdR
+  c(11) = GU_vdX
+  c(12) = GU_vdR
+  c(13) = GU_vdX
+  c(14) = GU_vdR
+  c(15) = GU_vdX
+  c(16) = GU_vdR
+  c(17) = GU_vdX
+  c(18) = GU_dRz
+  c(19) = GU_dXz
+  c(20) = GU_dPmin
+  c(21) = GU_dPmax
+  c(22) = GU_dQmin
+  c(23) = GU_dQmax
+  c(24) = code_Memo
+  c(25) = code_Tags
   
-  InitParamCode_Gen = 24
+  InitParamCode_Gen = 25
 End Function
 Function checkHeader_Gen( ByRef Array() As String, ByVal colCount )
   okBusName  = false
@@ -1715,8 +1848,8 @@ Function InitParamCode_Breaker( l() As String, c() As long ) As long
   l(11) = "Rated Momentary Amps"
   l(12) = "No Derate"
   l(13) = "NACD"
-  l(14) = "Tags"
-  l(15) = "Memo"
+  l(14) = "Memo"
+  l(15) = "Tags"
 
   c(1)  = BK_nInService
   c(2)  = BK_sID
@@ -1730,9 +1863,9 @@ Function InitParamCode_Breaker( l() As String, c() As long ) As long
   c(10) = BK_dRatedKV
   c(11) = BK_dRating2
   c(12) = BK_nDontDerate
-  c(13) = BK_dNACD
-  c(14) = code_Tags
-  c(15) = code_Memo
+  c(13) = BK_dNACD  
+  c(14) = code_Memo
+  c(15) = code_Tags
 
   InitParamCode_Breaker = 15
 End Function
@@ -1815,6 +1948,8 @@ Function InitParamCode_Scap( l() As String, c() As long ) As long
   l(5)  = "Ipr"
   l(6)  = "R0"
   l(7)  = "X0"
+  l(8)  = "Memo"
+  l(9)  = "Tags"
   
   c(1)  = SC_nInService
   c(2)  = SC_sName
@@ -1823,8 +1958,10 @@ Function InitParamCode_Scap( l() As String, c() As long ) As long
   c(5)  = SC_dIpr
   c(6)  = SC_dR0
   c(7)  = SC_dX0
+  c(8)  = code_Memo
+  c(9)  = code_Tags
 
-  InitParamCode_Scap = 7
+  InitParamCode_Scap = 9
 End Function
 Function checkHeader_Scap( ByRef Array() As String, ByVal colCount )
   okBus1  = false
@@ -1892,6 +2029,637 @@ Function processRow_Scap( ByRef FieldName() As String, ByRef FieldVal() As Strin
     End If
     PrintTTY("  Updated: " & listUpdated )
     processRow_Scap = countUpdated
+  Else
+    PrintTTY("  Error: Nothing to update" )
+  End If
+End Function
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+''''''''''''''''''''''''Overcurrent Relay-Phase'''''''''''''''''''''''
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+Function InitParamCode_Ocp( l() As String, c() As long ) As long
+  l(1)  = "In Serv"
+  l(2)  = "ID"
+  l(3)  = "Asset ID"
+  'l(4) = 'Curve'
+  'l(5) = 'Library'
+  l(4)  = "TD"
+  l(5)  = "Pickup (A)"
+  l(6)  = "CT Ratio"
+  l(7)  = "CT Conn."
+  l(8)  = "Dir."
+  l(9)  = "Inst. (A)"
+  l(10) = "DT Delay"
+  l(11) = "Inst.Dir."
+  'l(12)= "dc-sensitive"
+  'l(12) = "Char Angle"
+  'l(13) = "Dir. logic"
+  l(12) = "Adder1"
+  l(13) = "Mult.1"
+  l(14) = "Adder2"
+  l(15) = "Mult.2"
+  'l(16) = "Voltage Controlled or Restrained"
+  l(16) = "Reset"
+  l(17) = "Memo"
+  l(18) = "Tags"
+    
+  c(1)  = OP_nInService
+  c(2)  = OP_sID
+  c(3)  = OP_sAssetID
+  c(4)  = OP_dTDial
+  c(5)  = OP_dTap
+  c(6)  = OP_dCT
+  c(7)  = OP_nByCTConnect
+  c(8)  = OP_nDirectional
+  c(9)  = OP_dInst
+  c(10) = OP_dInstDelay
+  c(11) = OP_nIDirectional
+  c(12) = OP_dTimeAdd
+  c(13) = OP_dTimeMult
+  c(14) = OP_dTimeAdd2
+  c(15) = OP_dTimeMult2
+  c(16) = OP_dResetTime
+  c(17) = code_Memo
+  c(18) = code_Tags
+  
+  InitParamCode_Ocp = 18
+End Function
+
+Function checkHeader_Ocp( ByRef Array() As String, ByVal colCount )
+  okBranch  = false
+  okID      = false
+  okAssetID = false
+  checkHeader_Ocp = false
+  For ii = 1 to colCount
+    If Array(ii) = "Branch" Then okBranch  = true
+    If Array(ii) = "ID" Then okID  = true
+    If Array(ii) = "Asset ID" Then okAssetID = true
+    If okBranch And okID And okAssetID Then
+      checkHeader_Ocp = true
+      exit For
+    End If
+  Next
+End Function
+
+Function processRow_Ocp( ByRef FieldName() As String, ByRef FieldVal() As String, ByVal cols ) As long
+  processRow_Ocp = 0
+  ' Find object handle
+  ocpHnd&         = 0
+  branchHnd&      = -1
+  branch_bus1Hnd& = -1
+  branch_bus2Hnd& = -1
+  CktID$ = "999"
+  ID$    = "999"
+  For ii = 1 to cols 
+    If FieldName(ii) = "Branch" Then 
+      nPos = InStr(1,FieldVal(ii)," - ") 
+      nPos1= InStr(nPos,FieldVal(ii),"kV")
+      nLen = Len(FieldVal(ii))  
+      branch_bus1Name$ = Trim(Mid(FieldVal(ii),1,nPos-1))                 
+      branch_bus2Name$ = Trim(Mid(FieldVal(ii),nPos+3,nPos1-nPos-1))
+      branch_bus1Hnd   = findBusHnd(branch_bus1Name)
+      branch_bus2Hnd   = findBusHnd(branch_bus2Name) 
+      CktID$           = Trim(Mid(FieldVal(ii),nPos1+2,nLen-2-nPos1))
+      BranchType$      = Right(FieldVal(ii), 1)
+      select case BranchType$
+        case "L"
+          nType& = TC_LINE
+        case "T"
+          nType& = TC_XFMR
+        case "X"
+          nType& = TC_XFMR3
+        case "W"
+          nType& = TC_PS
+        case default
+          Print "Error in branch equipment type"
+          Stop
+        End select
+      If branch_bus1Hnd > -1 And branch_bus2Hnd > -1 And CktID <> "999" Then         
+         branchHnd& = branchHndSearch( nType&, branch_bus1Hnd, branch_bus2Hnd, 0, CktID )
+      End If
+    End If
+    If FieldName(ii) = "ID" Then ID = FieldVal(ii)  
+    If branchHnd > -1 And ID <> "999" Then
+      ocpHnd&     = ocpSearch( branchHnd, ID )
+      exit For
+    End If
+  Next
+  If ocpHnd = 0 Then 
+    printTTY("  Error: Object not found")
+    exit Function
+  End If
+  countUpdated = 0
+  listUpdated$ = ""
+  For ii = 1 to cols
+    nIndex = 0
+    sFieldVal$ = FieldVal(ii)
+    paramID = LookupParamCode(sLabels,nCodes,nCountCodes,FieldName(ii),1)
+    If paramID = 0 Or sFieldVal = "N/A" Then
+      GoTo NextIteration
+    End If
+    If FieldName(ii) = "Pickup (A)" Then
+      nPos = InStr(1,FieldVal(ii)," ")
+      sFieldVal$ = Left(FieldVal(ii), nPos - 1) 
+    End If
+    If FieldName(ii) = "CT Ratio" Then
+      nPos = InStr(1,FieldVal(ii),"/")
+      dPri = a2d(Left(FieldVal(ii), nPos - 1))
+      dSec = a2d(Right(FieldVal(ii),Len(FieldVal(ii))-nPos))      
+      sFieldVal$ = Str(dPri/dSec)
+    End If
+    
+    If 0 < SetFieldValue(sLabels,nCodes,nCountCodes,sFieldVal,ocpHnd,paramID&,nIndex) Then
+      countUpdated = countUpdated + 1
+      If listUpdated <> "" Then listUpdated = listUpdated & "," & FieldName(ii) Else listUpdated = FieldName(ii)
+    End If
+    NextIteration
+  Next
+  If countUpdated > 0 Then
+    If PostData(ocpHnd) = 0 Then
+      PrintTTY("  Error: " + ErrorString())
+      exit Function
+    End If
+    PrintTTY("  Updated: " & listUpdated )
+    processRow_Ocp = countUpdated
+  Else
+    PrintTTY("  Error: Nothing to update" )
+  End If
+End Function
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+'''''''''''''''''''''''Overcurrent Relay-Ground'''''''''''''''''''''''
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+Function InitParamCode_Ocg( l() As String, c() As long ) As long
+  l(1)  = "In Serv"
+  l(2)  = "ID"
+  l(3)  = "Asset ID"
+  'l(4) = 'Curve'
+  'l(5) = 'Library'
+  l(4)  = "TD"
+  l(5)  = "Pickup (A)"
+  l(6)  = "CT Ratio"
+  l(7)  = "Dir."
+  l(8)  = "Inst. (A)"
+  l(9)  = "DT Delay"
+  l(10) = "Inst.Dir."
+  'l(11)= "dc-sensitive"
+  'l(11) = "Char Angle"
+  l(11) = "Dir. logic"
+  'l(13) = "CT Location"
+  'l(14) = "Operating Qty"
+  l(12) = "Adder1"
+  l(13) = "Mult.1"
+  l(14) = "Adder2"
+  l(15) = "Mult.2"
+  l(16) = "Reset"
+  l(17) = "Memo"
+  l(18) = "Tags"
+  
+  c(1)  = OG_nInService
+  c(2)  = OG_sID
+  c(3)  = OG_sAssetID
+  c(4)  = OG_dTDial
+  c(5)  = OG_dTap
+  c(6)  = OG_dCT
+  c(7)  = OG_nDirectional
+  c(8)  = OG_dInst
+  c(9)  = OG_dInstDelay
+  c(10) = OG_nIDirectional
+  c(11) = OG_nPolar
+  c(12) = OG_dTimeAdd
+  c(13) = OG_dTimeMult
+  c(14) = OG_dTimeAdd2
+  c(15) = OG_dTimeMult2
+  c(16) = OG_dResetTime
+  c(17) = code_Memo
+  c(18) = code_Tags
+  
+  InitParamCode_Ocg = 18
+End Function
+
+Function checkHeader_Ocg( ByRef Array() As String, ByVal colCount )
+  okBranch  = false
+  okID      = false
+  okAssetID = false
+  checkHeader_Ocg = false
+  For ii = 1 to colCount
+    If Array(ii) = "Branch" Then okBranch  = true
+    If Array(ii) = "ID" Then okID  = true
+    If Array(ii) = "Asset ID" Then okAssetID = true
+    If okBranch And okID And okAssetID Then
+      checkHeader_Ocg = true
+      exit For
+    End If
+  Next
+End Function
+
+Function processRow_Ocg( ByRef FieldName() As String, ByRef FieldVal() As String, ByVal cols ) As long
+  processRow_Ocg = 0
+  ' Find object handle
+  ocgHnd&         = 0
+  branchHnd&      = -1
+  branch_bus1Hnd& = -1
+  branch_bus2Hnd& = -1
+  CktID$ = "999"
+  ID$    = "999"
+  For ii = 1 to cols 
+    If FieldName(ii) = "Branch" Then 
+      nPos = InStr(1,FieldVal(ii)," - ") 
+      nPos1= InStr(nPos,FieldVal(ii),"kV")
+      nLen = Len(FieldVal(ii))  
+      branch_bus1Name$ = Trim(Mid(FieldVal(ii),1,nPos-1))                 
+      branch_bus2Name$ = Trim(Mid(FieldVal(ii),nPos+3,nPos1-nPos-1))
+      branch_bus1Hnd   = findBusHnd(branch_bus1Name)
+      branch_bus2Hnd   = findBusHnd(branch_bus2Name) 
+      CktID$           = Trim(Mid(FieldVal(ii),nPos1+2,nLen-2-nPos1))
+      BranchType$      = Right(FieldVal(ii), 1)
+      select case BranchType$
+        case "L"
+          nType& = TC_LINE
+        case "T"
+          nType& = TC_XFMR
+        case "X"
+          nType& = TC_XFMR3
+        case "W"
+          nType& = TC_PS
+        case default
+          Print "Error in branch equipment type"
+          Stop
+        End select
+      If branch_bus1Hnd > -1 And branch_bus2Hnd > -1 And CktID <> "999" Then         
+         branchHnd& = branchHndSearch( nType&, branch_bus1Hnd, branch_bus2Hnd, 0, CktID )
+      End If
+    End If
+    If FieldName(ii) = "ID" Then ID = FieldVal(ii)  
+    If branchHnd > -1 And ID <> "999" Then
+      ocgHnd&     = ocgSearch( branchHnd, ID )
+      exit For
+    End If
+  Next
+  If ocgHnd = 0 Then 
+    printTTY("  Error: Object not found")
+    exit Function
+  End If
+  countUpdated = 0
+  listUpdated$ = ""
+  For ii = 1 to cols
+    nIndex = 0
+    sFieldVal$ = FieldVal(ii)
+    paramID = LookupParamCode(sLabels,nCodes,nCountCodes,FieldName(ii),1)
+    If paramID = 0 Or sFieldVal = "N/A" Then
+      GoTo NextIteration
+    End If
+    
+    If FieldName(ii) = "Pickup (A)" Then
+      nPos = InStr(1,FieldVal(ii)," ")
+      sFieldVal$ = Left(FieldVal(ii), nPos - 1) 
+    End If
+    If FieldName(ii) = "CT Ratio" Then
+      nPos = InStr(1,FieldVal(ii),"/")
+      dPri = a2d(Left(FieldVal(ii), nPos - 1))
+      dSec = a2d(Right(FieldVal(ii),Len(FieldVal(ii))-nPos))      
+      sFieldVal$ = Str(dPri/dSec)
+    End If
+    If FieldName(ii) = "Dir. logic" Then
+      If (InStr(1,FieldVal(ii),"Vo") > 0) Then 
+         sFieldVal$ = "0"
+      ElseIf (InStr(1,FieldVal(ii),"V2") > 0) Then 
+         sFieldVal$ = "1"
+      ElseIf (InStr(1,FieldVal(ii),"32Q") > 0) Then 
+         sFieldVal$ = "2"
+      ElseIf (InStr(1,FieldVal(ii),"32G") > 0) Then 
+         sFieldVal$ = "3"
+      End If
+    End If
+    
+    If 0 < SetFieldValue(sLabels,nCodes,nCountCodes,sFieldVal,ocgHnd,paramID&,nIndex) Then
+      countUpdated = countUpdated + 1
+      If listUpdated <> "" Then listUpdated = listUpdated & "," & FieldName(ii) Else listUpdated = FieldName(ii)
+    End If
+    NextIteration
+  Next
+  If countUpdated > 0 Then
+    If PostData(ocgHnd) = 0 Then
+      PrintTTY("  Error: " + ErrorString())
+      exit Function
+    End If
+    PrintTTY("  Updated: " & listUpdated )
+    processRow_Ocg = countUpdated
+  Else
+    PrintTTY("  Error: Nothing to update" )
+  End If
+End Function
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+'''''''''''''''''''''''''Distance Relay-Phase'''''''''''''''''''''''''
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+Function InitParamCode_Dsp( l() As String, c() As long ) As long
+  l(1)  = "In Serv"
+  l(2)  = "ID"
+  l(3)  = "ID2"
+  l(4)  = "Asset ID"
+  l(5)  = "Type"
+  l(6)  = "CT Ratio"
+  l(7)  = "PT Ratio"
+  'l(8)  = "PT Bus"
+  'l(8)  = "Min I"
+  'l(9)  = "Zone-2 supervision"
+  'l(8)  = "Z1 Delay"
+  'l(9)  = "Z1 Reach"
+  'l(10) = "Z2 Delay"
+  'l(11) = "Z2 Reach"
+  'l(12) = "Z3 Delay"
+  'l(13) = "Z3 Reach"
+  l(8)  = "Memo"
+  l(9)  = "Tags"
+  
+  c(1)  = DP_nInService
+  c(2)  = DP_sID
+  c(3)  = DP_sType
+  c(4)  = DP_sAssetID
+  c(5)  = DP_sDSType
+  c(6)  = DP_dCT
+  c(7)  = DP_dVT
+  'c(8)  = DP_vdDelay
+  'c(9)  = DP_vdReach
+  'c(10) = DP_vdDelay
+  'c(11) = DP_vdReach
+  'c(12) = DP_vdDelay
+  'c(13) = DP_vdReach
+  c(8)  = code_Memo
+  c(9)  = code_Tags
+  
+  InitParamCode_Dsp = 9
+End Function
+
+Function checkHeader_Dsp( ByRef Array() As String, ByVal colCount )
+  okBranch  = false
+  okID      = false
+  okID2     = false
+  okAssetID = false
+  checkHeader_Dsp = false
+  For ii = 1 to colCount
+    If Array(ii) = "Branch" Then okBranch  = true
+    If Array(ii) = "ID" Then okID  = true
+    If Array(ii) = "ID2" Then okID2  = true
+    If Array(ii) = "Asset ID" Then okAssetID = true
+    If okBranch And okID And okID2 And okAssetID Then
+      checkHeader_Dsp = true
+      exit For
+    End If
+  Next
+End Function
+
+Function processRow_Dsp( ByRef FieldName() As String, ByRef FieldVal() As String, ByVal cols ) As long
+  processRow_Dsp = 0
+  ' Find object handle
+  dspHnd&         = 0
+  branchHnd&      = -1
+  branch_bus1Hnd& = -1
+  branch_bus2Hnd& = -1
+  CktID$ = "999"
+  ID$    = "999"
+  ID2$   = "999"
+  For ii = 1 to cols 
+    If FieldName(ii) = "Branch" Then 
+      nPos = InStr(1,FieldVal(ii)," - ") 
+      nPos1= InStr(nPos,FieldVal(ii),"kV")
+      nLen = Len(FieldVal(ii))  
+      branch_bus1Name$ = Trim(Mid(FieldVal(ii),1,nPos-1))                 
+      branch_bus2Name$ = Trim(Mid(FieldVal(ii),nPos+3,nPos1-nPos-1))
+      branch_bus1Hnd   = findBusHnd(branch_bus1Name)
+      branch_bus2Hnd   = findBusHnd(branch_bus2Name) 
+      CktID$           = Trim(Mid(FieldVal(ii),nPos1+2,nLen-2-nPos1))
+      BranchType$      = Right(FieldVal(ii), 1)
+      select case BranchType$
+        case "L"
+          nType& = TC_LINE
+        case "T"
+          nType& = TC_XFMR
+        case "X"
+          nType& = TC_XFMR3
+        case "W"
+          nType& = TC_PS
+        case default
+          Print "Error in branch equipment type"
+          Stop
+        End select
+      If branch_bus1Hnd > -1 And branch_bus2Hnd > -1 And CktID <> "999" Then         
+         branchHnd& = branchHndSearch( nType&, branch_bus1Hnd, branch_bus2Hnd, 0, CktID )
+      End If
+    End If
+    If FieldName(ii) = "ID"  Then ID  = FieldVal(ii)  
+    If FieldName(ii) = "ID2" Then ID2 = FieldVal(ii) 
+    If branchHnd > -1 And ID <> "999" And ID2 <> "999" Then
+      dspHnd&     = dspSearch( branchHnd, ID, ID2 )
+      exit For
+    End If
+  Next
+  If dspHnd = 0 Then 
+    printTTY("  Error: Object not found")
+    exit Function
+  End If
+  countUpdated = 0
+  listUpdated$ = ""
+  For ii = 1 to cols
+    nIndex = 0
+    sFieldVal$ = FieldVal(ii)
+    paramID = LookupParamCode(sLabels,nCodes,nCountCodes,FieldName(ii),1)
+    If paramID = 0 Or sFieldVal = "N/A" Then
+      GoTo NextIteration
+    End If
+    
+    If (FieldName(ii) = "CT Ratio") Or (FieldName(ii) = "PT Ratio") Then
+      nPos = InStr(1,FieldVal(ii),"/")
+      dPri = a2d(Left(FieldVal(ii), nPos - 1))
+      dSec = a2d(Right(FieldVal(ii),Len(FieldVal(ii))-nPos))      
+      sFieldVal$ = Str(dPri/dSec)
+    End If
+    'If (FieldName(ii) = "Z1 Delay") Or (FieldName(ii) = "Z1 Reach") Then
+    '  nIndex = 1
+    'ElseIf (FieldName(ii) = "Z2 Delay") Or (FieldName(ii) = "Z2 Reach") Then
+    '  nIndex = 2
+    'ElseIf (FieldName(ii) = "Z3 Delay") Or (FieldName(ii) = "Z3 Reach") Then
+    '  nIndex = 3
+    'End If
+
+    If 0 < SetFieldValue(sLabels,nCodes,nCountCodes,sFieldVal,dspHnd,paramID&,nIndex) Then
+      countUpdated = countUpdated + 1
+      If listUpdated <> "" Then listUpdated = listUpdated & "," & FieldName(ii) Else listUpdated = FieldName(ii)
+    End If
+    NextIteration
+  Next
+  If countUpdated > 0 Then
+    If PostData(dspHnd) = 0 Then
+      PrintTTY("  Error: " + ErrorString())
+      exit Function
+    End If
+    PrintTTY("  Updated: " & listUpdated )
+    processRow_Dsp = countUpdated
+  Else
+    PrintTTY("  Error: Nothing to update" )
+  End If
+End Function
+
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+'''''''''''''''''''''''''Distance Relay-Ground''''''''''''''''''''''''
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+Function InitParamCode_Dsg( l() As String, c() As long ) As long
+  l(1)  = "In Serv"
+  l(2)  = "ID"
+  l(3)  = "ID2"
+  l(4)  = "Asset ID"
+  l(5)  = "Type"
+  l(6)  = "CT Ratio"
+  l(7)  = "PT Ratio"
+  'l(8)  = "PT Bus"
+  'l(8)  = "Min I"
+  'l(8)  = "K1"
+  'l(9)  = "K2"
+  'l(10) = "Zone-2 supervision"
+  'l(8)  = "Z1 Delay"
+  'l(9) = "Z1 Reach"
+  'l(10) = "Z2 Delay"
+  'l(11) = "Z2 Reach"
+  'l(12) = "Z3 Delay"
+  'l(13) = "Z3 Reach"
+  l(8) = "Memo"
+  l(9) = "Tags"
+  
+  
+  c(1)  = DG_nInService
+  c(2)  = DG_sID
+  c(3)  = DG_sType
+  c(4)  = DG_sAssetID
+  c(5)  = DG_sDSType
+  c(6)  = DG_dCT
+  c(7)  = DG_dVT
+  'c(8)  = DG_dKmag 'DG_dKang
+  'c(8)  = DG_vdDelay
+  'c(9)  = DG_vdReach
+  'c(10) = DG_vdDelay
+  'c(11) = DG_vdReach
+  'c(12) = DG_vdDelay
+  'c(13) = DG_vdReach
+  c(8)  = code_Memo
+  c(9)  = code_Tags
+  
+  InitParamCode_Dsg = 9
+End Function
+
+Function checkHeader_Dsg( ByRef Array() As String, ByVal colCount )
+  okBranch  = false
+  okID      = false
+  okID2     = false
+  okAssetID = false
+  checkHeader_Dsg = false
+  For ii = 1 to colCount
+    If Array(ii) = "Branch" Then okBranch  = true
+    If Array(ii) = "ID" Then okID  = true
+    If Array(ii) = "ID2" Then okID2  = true
+    If Array(ii) = "Asset ID" Then okAssetID = true
+    If okBranch And okID And okID2 And okAssetID Then
+      checkHeader_Dsg = true
+      exit For
+    End If
+  Next
+End Function
+
+Function processRow_Dsg( ByRef FieldName() As String, ByRef FieldVal() As String, ByVal cols ) As long
+  processRow_Dsg = 0
+  ' Find object handle
+  dsgHnd&         = 0
+  branchHnd&      = -1
+  branch_bus1Hnd& = -1
+  branch_bus2Hnd& = -1
+  CktID$ = "999"
+  ID$    = "999"
+  ID2$   = "999"
+  For ii = 1 to cols 
+    If FieldName(ii) = "Branch" Then 
+      nPos = InStr(1,FieldVal(ii)," - ") 
+      nPos1= InStr(nPos,FieldVal(ii),"kV")
+      nLen = Len(FieldVal(ii))  
+      branch_bus1Name$ = Trim(Mid(FieldVal(ii),1,nPos-1))                 
+      branch_bus2Name$ = Trim(Mid(FieldVal(ii),nPos+3,nPos1-nPos-1))
+      branch_bus1Hnd   = findBusHnd(branch_bus1Name)
+      branch_bus2Hnd   = findBusHnd(branch_bus2Name) 
+      CktID$           = Trim(Mid(FieldVal(ii),nPos1+2,nLen-2-nPos1))
+      BranchType$      = Right(FieldVal(ii), 1)
+      select case BranchType$
+        case "L"
+          nType& = TC_LINE
+        case "T"
+          nType& = TC_XFMR
+        case "X"
+          nType& = TC_XFMR3
+        case "W"
+          nType& = TC_PS
+        case default
+          Print "Error in branch equipment type"
+          Stop
+        End select
+      If branch_bus1Hnd > -1 And branch_bus2Hnd > -1 And CktID <> "999" Then         
+         branchHnd& = branchHndSearch( nType&, branch_bus1Hnd, branch_bus2Hnd, 0, CktID )
+      End If
+    End If
+    If FieldName(ii) = "ID"  Then ID  = FieldVal(ii)  
+    If FieldName(ii) = "ID2" Then ID2 = FieldVal(ii) 
+    If branchHnd > -1 And ID <> "999" And ID2 <> "999" Then
+      dsgHnd&     = dsgSearch( branchHnd, ID, ID2 )
+      exit For
+    End If
+  Next
+  If dsgHnd = 0 Then 
+    printTTY("  Error: Object not found")
+    exit Function
+  End If
+  countUpdated = 0
+  listUpdated$ = ""
+  For ii = 1 to cols
+    nIndex = 0
+    sFieldVal$ = FieldVal(ii)
+    paramID = LookupParamCode(sLabels,nCodes,nCountCodes,FieldName(ii),1)
+    If paramID = 0 Or sFieldVal = "N/A" Then
+      GoTo NextIteration
+    End If
+    
+    If (FieldName(ii) = "CT Ratio") Or (FieldName(ii) = "PT Ratio") Then
+      nPos = InStr(1,FieldVal(ii),"/")
+      dPri = a2d(Left(FieldVal(ii), nPos - 1))
+      dSec = a2d(Right(FieldVal(ii),Len(FieldVal(ii))-nPos))      
+      sFieldVal$ = Str(dPri/dSec)
+    End If
+    'If FieldName(ii) = "K1" Then
+    '  nPos = InStr(1,FieldVal(ii),"@")
+    '  sFieldVal$ = Left(FieldVal(ii), nPos - 1)
+    '  sKang$     = Right(FieldVal(ii), Len(FieldVal(ii))-nPos) 
+    'End If
+    'If (FieldName(ii) = "Z1 Delay") Or (FieldName(ii) = "Z1 Reach") Then
+    '  nIndex = 1
+    'ElseIf (FieldName(ii) = "Z2 Delay") Or (FieldName(ii) = "Z2 Reach") Then
+    '  nIndex = 2
+    'ElseIf (FieldName(ii) = "Z3 Delay") Or (FieldName(ii) = "Z3 Reach") Then
+    '  nIndex = 3
+    'End If
+
+    If 0 < SetFieldValue(sLabels,nCodes,nCountCodes,sFieldVal,dsgHnd,paramID&,nIndex) Then
+      countUpdated = countUpdated + 1
+      If listUpdated <> "" Then listUpdated = listUpdated & "," & FieldName(ii) Else listUpdated = FieldName(ii)
+    End If
+    'If FieldName(ii) = "K1" Then
+    '  sFiledVal$ = sKang
+    '  If 0 < SetFieldValue(sLabels,nCodes,nCountCodes,sFieldVal,dsgHnd,DG_dKang,nIndex) Then
+	'    countUpdated = countUpdated + 1
+	'    If listUpdated <> "" Then listUpdated = listUpdated & ",K1_Ang" Else listUpdated = "K1_Ang"
+	'  End If 
+    'End If
+    NextIteration
+  Next
+  If countUpdated > 0 Then
+    If PostData(dsgHnd) = 0 Then
+      PrintTTY("  Error: " + ErrorString())
+      exit Function
+    End If
+    PrintTTY("  Updated: " & listUpdated )
+    processRow_Dsg = countUpdated
   Else
     PrintTTY("  Error: Nothing to update" )
   End If
