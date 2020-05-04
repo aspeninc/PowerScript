@@ -1,2 +1,2 @@
 # PowerScript
-ASPEN PowerScript programs for Power System Studies
+ASPEN PowerScript programs for power system studies
