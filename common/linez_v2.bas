@@ -11,7 +11,7 @@
 ' Change these constants as as needed
 Const KVMin = 0        
 Const KVMax = 999
-Const maxLines  = 10000
+Const maxLines  = 20000
 '
 '==========================
 ' Do not change this constant
@@ -47,11 +47,11 @@ Sub main()
       LineCount  = 0
       While GetEquipment( TC_LINE, PickedHnd& ) > 0
         If ProcessedHnd(PickedHnd&-hndOffset) = 0 Then
-          Call GetData( PickedLineHnd, LN_nBus1Hnd, Bus1Hnd& )
+          Call GetData( PickedHnd, LN_nBus1Hnd, Bus1Hnd& )
           Call getdata( Bus1Hnd, BUS_dKVNominal,dKV# )
           If dKV >= KVMin And dKV <= KVmax Then
             Call GetData( Bus1Hnd, BUS_nTapBus, TapCode1& )
-            Call GetData( PickedLineHnd, LN_nBus2Hnd, Bus2Hnd& )
+            Call GetData( PickedHnd, LN_nBus2Hnd, Bus2Hnd& )
             Call GetData( Bus2Hnd, BUS_nTapBus, TapCode2& )
             If TapCode1 = 0 Or TapCode2 = 0 Then
               Call compuOneLine( PickedHnd& )       ' Want to start from a real bus
